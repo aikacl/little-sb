@@ -3,28 +3,36 @@
 #include <array>
 #include <asio.hpp>
 #include <iostream>
+#include <print>
 
 using asio::ip::tcp;
 
 class Client {
 public:
-  Client()
+  Client(asio::io_context &io_context, std::string_view const host,
+         std::uint16_t const port)
+      : _socket{io_context}, _resolver{io_context}
   {
-    auto const endpoints{_resolver.resolve("127.0.0.1", "")};
-    asio::connect(_socket, endpoints);
+    std::error_code ec;
 
-    constexpr auto buffer_length{128UZ};
+    auto const endpoints{
+        _resolver.resolve(tcp::v4(), host, std::to_string(port))};
+    asio::connect(_socket, endpoints, ec);
+    if (ec) {
+      std::println("Error: {}", ec.message());
+      return;
+    }
+
+    constexpr auto buffer_length{128};
     std::array<char, buffer_length> buffer{};
-    std::error_code ignored_error;
 
-    while (true) {
-      auto const length{_socket.read_some(asio::buffer(buffer), ignored_error)};
+    while (ec != asio::error::eof) {
+      auto const length{_socket.read_some(asio::buffer(buffer), ec)};
       std::cout.write(buffer.data(), length);
     }
   }
 
 private:
-  asio::io_context _io_context;
-  tcp::socket _socket{_io_context};
-  tcp::resolver _resolver{_io_context};
+  tcp::socket _socket;
+  tcp::resolver _resolver;
 };
