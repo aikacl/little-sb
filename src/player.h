@@ -26,7 +26,7 @@ public:
   }
 
 private:
-  [[nodiscard]] static auto damage_to(Player const &_) -> std::uint32_t
+  [[nodiscard]] auto damage_to(Player const &_) const -> std::uint32_t
   {
     return little_sb::random::uniform(1, 10);
   }
