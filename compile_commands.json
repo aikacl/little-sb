@@ -1,0 +1,6 @@
+[
+{
+  "directory": "/home/shelpam/Documents/projects/little-sb",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb/linux/x86_64/release/src/main.cpp.o", "src/main.cpp"],
+  "file": "src/main.cpp"
+}]
