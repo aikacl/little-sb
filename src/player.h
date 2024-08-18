@@ -10,8 +10,8 @@ public:
 
   [[nodiscard]] auto attack(Player &target) const -> std::uint32_t
   {
-    auto const damage{damage_to(target)};
-    target._health -= std::min(target._health, damage);
+    auto const damage{std::min(target._health, damage_to(target))};
+    target._health -= damage;
     return damage;
   }
 
