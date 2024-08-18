@@ -1,4 +1,4 @@
-.xmake
+.xmake/
 build/
 vs2022/
-
+.cache/
