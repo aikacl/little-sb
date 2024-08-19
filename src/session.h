@@ -1,24 +1,21 @@
 #pragma once
 
-#include "sb-protocol.h"
+#include "handle-error.h"
+#include "sb-packet.h"
 #include <asio.hpp>
 #include <print>
-#include <utility>
 
 using asio::ip::tcp;
 
-class Seesion {
+class Session {
 public:
-  Seesion(asio::io_context &io_context,
-          tcp::resolver::results_type server_endpoint,
+  Session(asio::io_context &io_context,
+          tcp::resolver::results_type server_endpoints,
           std::string_view const player_name)
-      : _socket{io_context}, _server_endpoint{std::move(server_endpoint)},
+      : _socket{io_context}, _server_endpoints{std::move(server_endpoints)},
         _player_name{player_name}
   {
-    if (_ec) {
-      std::println("Error: {}", _ec.message());
-      return;
-    }
+    handle_error(_ec);
   }
 
   void push_back(std::string_view const data)
@@ -29,11 +26,8 @@ public:
 
   void send_all()
   {
-    asio::connect(_socket, _server_endpoint, _ec);
-    if (_ec) {
-      std::println("Error: {}", _ec.message());
-      return;
-    }
+    asio::connect(_socket, _server_endpoints, _ec);
+    handle_error(_ec);
 
     for (auto &data : _packets_list) {
       write(data);
@@ -43,12 +37,10 @@ public:
 
   auto receive() -> Sb_packet
   {
-    std::error_code ec;
     Sb_packet response;
-    _socket.read_some(asio::buffer(response), ec);
-    if (ec) {
-      std::println("Error: {}", ec.message());
-    }
+    _socket.read_some(asio::buffer(response), _ec);
+    handle_error(_ec);
+
     return response;
   }
 
@@ -59,26 +51,28 @@ public:
     send_all();
     auto const response{receive()};
     if constexpr (std::same_as<Result_type, std::string>) {
-      return std::string{response.to_string()};
+      return response.to_string();
     }
     else {
       return *static_cast<Result_type const *>(&response);
     }
   }
 
+  [[nodiscard]] auto player_name() const -> std::string_view
+  {
+    return _player_name;
+  }
+
 private:
   void write(Sb_packet &request)
   {
-    std::error_code ec;
-    asio::write(_socket, asio::buffer(request), ec);
-    if (ec) {
-      std::println("Error: {}", ec.message());
-    }
+    asio::write(_socket, asio::buffer(request), _ec);
+    handle_error(_ec);
   }
 
   std::error_code _ec;
   tcp::socket _socket;
-  tcp::resolver::results_type _server_endpoint;
+  tcp::resolver::results_type _server_endpoints;
   std::vector<Sb_packet> _packets_list;
   std::string _player_name;
 };
