@@ -3,12 +3,17 @@
 
 auto main() -> int
 {
-  asio::io_context io_context;
+  try {
+    asio::io_context io_context;
 
-  Server server{io_context, 1438};
+    Server server{io_context, 1438};
 
-  std::thread server_thread{[&io_context] { io_context.run(); }};
-  server_thread.detach();
+    std::thread server_thread{[&io_context] { io_context.run(); }};
+    server_thread.detach();
+  }
+  catch (std::exception &e) {
+    std::println("Exception: {}", e.what());
+  }
 
   return 0;
 }

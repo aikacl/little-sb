@@ -9,7 +9,7 @@
 
 class Application {
 public:
-  Application(Seesion *client) : _session{client} {}
+  Application(Session *client) : _session{client} {}
 
   [[nodiscard]] auto run() -> int
   {
@@ -91,7 +91,8 @@ private:
     }
     else if (_state == State::Should_terminate) {
       if (auto const response{_session->request<std::string>("Logout")};
-          response != "Ok, logged out.") {
+          response !=
+          std::format("Ok, {} logged out.", _session->player_name())) {
         std::println("Failed to logout from the server, '{}' received",
                      response);
       }
@@ -103,7 +104,7 @@ private:
     return _state == State::Should_terminate;
   }
 
-  Seesion *_session;
+  Session *_session;
   State _state{State::Greeting};
   std::string player_name;
   std::vector<Player> _players;

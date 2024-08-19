@@ -3,16 +3,21 @@
 
 auto main() -> int
 {
-  asio::io_context io_context;
+  try {
+    asio::io_context io_context;
 
-  auto const server_endpoints{
-      tcp::resolver{io_context}.resolve("localhost", "1438")};
-  Seesion session{io_context, server_endpoints, "You"};
+    auto const server_endpoints{
+        tcp::resolver{io_context}.resolve("localhost", "1438")};
+    Session session{io_context, server_endpoints, "You"};
 
-  Application app{&session};
-  auto const execution_result{app.run()};
+    Application app{&session};
+    auto const execution_result{app.run()};
 
-  io_context.run();
+    io_context.run();
 
-  return execution_result;
+    return execution_result;
+  }
+  catch (std::exception &e) {
+    std::println("Exception: {}", e.what());
+  }
 }

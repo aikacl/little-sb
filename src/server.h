@@ -1,5 +1,6 @@
 #pragma once
 
+#include "handle-error.h"
 #include "player.h"
 #include "sb-packet.h"
 #include <asio.hpp>
@@ -30,13 +31,14 @@ public:
       Sb_packet request;
       socket.read_some(asio::buffer(request), ec);
       handle_error(ec);
-      std::println("Request message: {}", request.to_string());
 
       if (request.header.protocol_name != Sb_packet::this_protocol_name) {
         std::println("Un-identified protocol: {}",
                      std::string_view{request.header.protocol_name});
         return;
       }
+
+      std::println("Request message: {}", request.to_string());
 
       std::println("Preparing response");
       Sb_packet response{Sb_packet::Sender_type::Server, "Server",
@@ -81,20 +83,12 @@ private:
     }
     if (cmd == "Logout") {
       _online[std::string{cmd}] = false;
-      return "Ok, logged out.";
+      return std::format("Ok, {} logged out.", player_name);
     }
     if (cmd == "damage") {
     }
 
     return "Unspecified";
-  }
-
-  static void handle_error(std::error_code const &ec)
-  {
-    if (ec) {
-      std::println("Error: {}", ec.message());
-      throw std::runtime_error{ec.message()};
-    }
   }
 
   std::unordered_map<std::string, Player> _players;
