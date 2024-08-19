@@ -1,23 +1,13 @@
 #include "application.h"
-#include "session.h"
 
 auto main() -> int
 {
   try {
-    asio::io_context io_context;
-
-    auto const server_endpoints{
-        tcp::resolver{io_context}.resolve("localhost", "1438")};
-    Session session{io_context, server_endpoints, "You"};
-
-    Application app{&session};
-    auto const execution_result{app.run()};
-
-    io_context.run();
-
-    return execution_result;
+    Application app{"localhost", 1438};
   }
   catch (std::exception &e) {
     std::println("Exception: {}", e.what());
   }
+
+  return 0;
 }

@@ -12,15 +12,18 @@ using asio::ip::tcp;
 
 class Server {
 public:
-  Server(asio::io_context &io_context, std::uint16_t const server_port)
-      : _acceptor{io_context, tcp::endpoint{tcp::v6(), server_port}}
+  Server(std::uint16_t const bind_port)
+      : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
   {
-    std::println("Listening port: {}", server_port);
+    run();
+  }
 
-    std::error_code ec;
+private:
+  void run()
+  {
+    std::println("Prepared to accept connections.");
     while (true) {
-      tcp::socket socket{io_context};
-      _acceptor.accept(socket);
+      auto socket{_acceptor.accept()};
 
       auto const remote_endpoint{socket.remote_endpoint()};
       std::println("");
@@ -29,8 +32,8 @@ public:
                    remote_endpoint.port());
 
       Sb_packet request;
-      socket.read_some(asio::buffer(request), ec);
-      handle_error(ec);
+      socket.read_some(asio::buffer(request), _ec);
+      handle_error(_ec);
 
       if (request.header.protocol_name != Sb_packet::this_protocol_name) {
         std::println("Un-identified protocol: {}",
@@ -44,12 +47,11 @@ public:
       Sb_packet response{Sb_packet::Sender_type::Server, "Server",
                          handle_request(request)};
       std::println("Responding: {}", response.to_string());
-      asio::write(socket, asio::buffer(response), ec);
-      handle_error(ec);
+      asio::write(socket, asio::buffer(response), _ec);
+      handle_error(_ec);
     }
   }
 
-private:
   auto handle_request(Sb_packet const &request) -> std::string
   {
     if (request.header.sender_type == Sb_packet::Sender_type::Client) {
@@ -85,6 +87,9 @@ private:
       _online[std::string{cmd}] = false;
       return std::format("Ok, {} logged out.", player_name);
     }
+    if (cmd == "list-players") {
+      return "I don't know how to implement this";
+    }
     if (cmd == "damage") {
     }
 
@@ -93,5 +98,7 @@ private:
 
   std::unordered_map<std::string, Player> _players;
   std::unordered_map<std::string, bool> _online;
+  asio::io_context _io_context;
   tcp::acceptor _acceptor;
+  std::error_code _ec;
 };

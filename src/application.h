@@ -9,21 +9,29 @@
 
 class Application {
 public:
-  Application(Session *client) : _session{client} {}
+  Application(std::string_view const hostname, std::uint16_t const port)
+      : _session{
+            _io_context,
+            tcp::resolver{_io_context}.resolve(hostname, std::to_string(port)),
+            "User1"}
+  {
+    run();
+  }
 
-  [[nodiscard]] auto run() -> int
+private:
+  void run()
   {
     while (!should_terminate()) {
       tick();
     }
-    return 0;
   }
 
-private:
   void start_new_game()
   {
-    _state = State::Starting;
+    std::println("Players: {}", _session.request<std::string>("list-players"));
+
     initialize_players();
+    _state = State::Starting;
   }
 
   void initialize_players()
@@ -34,7 +42,7 @@ private:
   void tick()
   {
     if (_state == State::Greeting) {
-      auto const response{_session->request<std::string>("Login")};
+      auto const response{_session.request<std::string>("Login")};
       std::println("Connected to the server: {}", response);
 
       std::println("Type \"start\" to begin the game!");
@@ -90,9 +98,9 @@ private:
       }
     }
     else if (_state == State::Should_terminate) {
-      if (auto const response{_session->request<std::string>("Logout")};
+      if (auto const response{_session.request<std::string>("Logout")};
           response !=
-          std::format("Ok, {} logged out.", _session->player_name())) {
+          std::format("Ok, {} logged out.", _session.player_name())) {
         std::println("Failed to logout from the server, '{}' received",
                      response);
       }
@@ -104,7 +112,8 @@ private:
     return _state == State::Should_terminate;
   }
 
-  Session *_session;
+  asio::io_context _io_context;
+  Session _session;
   State _state{State::Greeting};
   std::string player_name;
   std::vector<Player> _players;
