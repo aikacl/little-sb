@@ -1,6 +1,11 @@
 [
 {
   "directory": "/home/shelpam/Documents/projects/little-sb",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb/linux/x86_64/release/src/main.cpp.o", "src/main.cpp"],
-  "file": "src/main.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb-client/linux/x86_64/release/src/little-sb-client.cpp.o", "src/little-sb-client.cpp"],
+  "file": "src/little-sb-client.cpp"
+},
+{
+  "directory": "/home/shelpam/Documents/projects/little-sb",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb-server/linux/x86_64/release/src/little-sb-server.cpp.o", "src/little-sb-server.cpp"],
+  "file": "src/little-sb-server.cpp"
 }]
