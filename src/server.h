@@ -35,7 +35,7 @@ public:
       if (request.header.protocol_name != Sb_packet::this_protocol_name) {
         std::println("Un-identified protocol: {}",
                      std::string_view{request.header.protocol_name});
-        return;
+        continue;
       }
 
       std::println("Request message: {}", request.to_string());
