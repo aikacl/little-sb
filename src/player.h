@@ -6,7 +6,7 @@
 
 class Player {
 public:
-  Player(std::string name) : _name(std::move(name)) {}
+  explicit Player(std::string_view const name) : _name{name} {}
 
   [[nodiscard]] auto attack(Player &target) const -> std::uint32_t
   {

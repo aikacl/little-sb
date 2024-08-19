@@ -1,25 +1,103 @@
 #pragma once
 
+#include "player.h"
+#include "sb-protocol.h"
 #include <asio.hpp>
+#include <ranges>
 #include <string_view>
+#include <unordered_map>
 
 using asio::ip::tcp;
 
 class Server {
 public:
   Server(asio::io_context &io_context, std::uint16_t const server_port)
-      : _acceptor{io_context, tcp::endpoint{tcp::v4(), server_port}}
+      : _acceptor{io_context, tcp::endpoint{tcp::v6(), server_port}}
   {
-    tcp::socket socket{io_context};
-    _acceptor.accept(socket);
+    std::println("Listening port: {}", server_port);
 
-    std::string_view const greeting{"Hello there!"};
     std::error_code ec;
-    while (!ec) {
-      asio::write(socket, asio::buffer(greeting), ec);
+    while (true) {
+      tcp::socket socket{io_context};
+      _acceptor.accept(socket);
+
+      auto const remote_endpoint{socket.remote_endpoint()};
+      std::println("");
+      std::println("Accepting new connection from {}:{}",
+                   remote_endpoint.address().to_string(),
+                   remote_endpoint.port());
+
+      Sb_packet request;
+      socket.read_some(asio::buffer(request), ec);
+      handle_error(ec);
+      std::println("Request message: {}", request.to_string());
+
+      if (request.header.protocol_name != Sb_packet::this_protocol_name) {
+        std::println("Un-identified protocol: {}",
+                     std::string_view{request.header.protocol_name});
+        return;
+      }
+
+      std::println("Preparing response");
+      Sb_packet response{Sb_packet::Sender_type::Server, "Server",
+                         handle_request(request)};
+      std::println("Responding: {}", response.to_string());
+      asio::write(socket, asio::buffer(response), ec);
+      handle_error(ec);
     }
   }
 
 private:
+  auto handle_request(Sb_packet const &request) -> std::string
+  {
+    if (request.header.sender_type == Sb_packet::Sender_type::Client) {
+      return handle_player_request(request.header.sender_name.to_string(),
+                                   request.to_string());
+    }
+    return std::format("Cann't parse {}'s request",
+                       static_cast<int>(request.header.sender_type));
+  }
+
+  static auto split_by(std::string_view const cmd,
+                       char delim = ' ') -> std::vector<std::string>
+  {
+    std::vector<std::string> parts;
+    for (auto const &part : cmd | std::views::split(delim)) {
+      parts.emplace_back(std::string_view{part});
+    }
+    return parts;
+  }
+
+  auto handle_player_request(std::string_view const player_name,
+                             std::string_view const cmd) -> std::string
+  {
+    if (cmd == "Login") {
+      // TODO(ShelpAm): add authentication.
+      std::println("Log-in request from player '{}'", player_name);
+      _players.try_emplace(std::string{player_name}, player_name);
+      _online[std::string{player_name}] = true;
+      std::println("Server info updated");
+      return std::format("Ok, {} logged in.", player_name);
+    }
+    if (cmd == "Logout") {
+      _online[std::string{cmd}] = false;
+      return "Ok, logged out.";
+    }
+    if (cmd == "damage") {
+    }
+
+    return "Unspecified";
+  }
+
+  static void handle_error(std::error_code const &ec)
+  {
+    if (ec) {
+      std::println("Error: {}", ec.message());
+      throw std::runtime_error{ec.message()};
+    }
+  }
+
+  std::unordered_map<std::string, Player> _players;
+  std::unordered_map<std::string, bool> _online;
   asio::ip::tcp::acceptor _acceptor;
 };

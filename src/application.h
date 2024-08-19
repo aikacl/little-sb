@@ -1,14 +1,16 @@
 #pragma once
 
 #include "player.h"
+#include "session.h"
 #include "state.h"
 #include <iostream>
 #include <print>
 #include <string>
-#include <thread>
 
 class Application {
 public:
+  Application(Seesion *client) : _session{client} {}
+
   [[nodiscard]] auto run() -> int
   {
     while (!should_terminate()) {
@@ -20,18 +22,21 @@ public:
 private:
   void start_new_game()
   {
-    _state = State::starting;
+    _state = State::Starting;
     initialize_players();
   }
 
   void initialize_players()
   {
-    _players.assign({{"You"}, {"The enemy"}});
+    _players.assign({Player{"You"}, Player{"The enemy"}});
   }
 
   void tick()
   {
-    if (_state == State::greeting) {
+    if (_state == State::Greeting) {
+      auto const response{_session->request<std::string>("Login")};
+      std::println("Connected to the server: {}", response);
+
       std::println("Type \"start\" to begin the game!");
       std::string choice;
       std::cin >> choice;
@@ -43,36 +48,37 @@ private:
         std::println("Unknown command '{}'", choice);
       }
     }
-    else if (_state == State::starting) {
+    else if (_state == State::Starting) {
       std::println("Game started. The following is the health of players:");
       for (auto const &player : _players) {
         std::println("{} has {} health.", player.name(), player.health());
       }
       std::println("");
-      _state = State::running;
+      _state = State::Running;
     }
-    else if (_state == State::running) {
-      std::this_thread::sleep_for(std::chrono::milliseconds{3000});
-      auto const &attacker{_players[_acting_player]};
-      auto &receiver{_players[_acting_player ^ 1]};
-      auto const damage{attacker.attack(receiver)};
-      std::println("{} gives {} damage to {}!", attacker.name(), damage,
-                   receiver.name());
+    else if (_state == State::Running) {
+      /*std::this_thread::sleep_for(std::chrono::milliseconds{3000});*/
+      /*auto const &attacker{_players[_acting_player]};*/
+      /*auto &receiver{_players[_acting_player ^ 1]};*/
+      /*auto const damage{attacker.attack(receiver)};*/
+      /*std::println("{} gives {} damage to {}!", attacker.name(), damage,*/
+      /*             receiver.name());*/
+      /**/
+      /*if (receiver.health() == 0) {*/
+      /*  std::println("{} has died. Game over!", receiver.name());*/
+      /*  _state = State::Ended;*/
+      /*}*/
+      /*else {*/
+      /*  std::println("Now you have {} health remaining.",
+       * _players[0].health());*/
+      /*  std::println("And the enemy has {} health remaining.",*/
+      /*               _players[1].health());*/
+      /*  std::println("");*/
+      /*}*/
 
-      if (receiver.health() == 0) {
-        std::println("{} has died. Game over!", receiver.name());
-        _state = State::ended;
-      }
-      else {
-        std::println("Now you have {} health remaining.", _players[0].health());
-        std::println("And the enemy has {} health remaining.",
-                     _players[1].health());
-        std::println("");
-      }
-
-      _acting_player ^= 1;
+      /*_acting_player ^= 1;*/
     }
-    else if (_state == State::ended) {
+    else if (_state == State::Ended) {
       std::print("Continue? y/[n]: ");
       std::string choice;
       std::getline(std::cin, choice);
@@ -80,20 +86,25 @@ private:
         start_new_game();
       }
       else {
-        _state = State::should_terminate;
+        _state = State::Should_terminate;
       }
     }
-    else if (_state == State::should_terminate) {
-      // Do NOTHING.
+    else if (_state == State::Should_terminate) {
+      if (auto const response{_session->request<std::string>("Logout")};
+          response != "Ok, logged out.") {
+        std::println("Failed to logout from the server, '{}' received",
+                     response);
+      }
     }
   }
 
   [[nodiscard]] auto should_terminate() const -> bool
   {
-    return _state == State::should_terminate;
+    return _state == State::Should_terminate;
   }
 
-  State _state{State::greeting};
-  int _acting_player{};
+  Seesion *_session;
+  State _state{State::Greeting};
+  std::string player_name;
   std::vector<Player> _players;
 };

@@ -1,4 +1,5 @@
 #include "server.h"
+#include <thread>
 
 auto main() -> int
 {
@@ -6,7 +7,8 @@ auto main() -> int
 
   Server server{io_context, 1438};
 
-  io_context.run();
+  std::thread server_thread{[&io_context] { io_context.run(); }};
+  server_thread.detach();
 
   return 0;
 }
