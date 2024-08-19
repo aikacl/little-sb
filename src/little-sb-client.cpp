@@ -1,9 +1,14 @@
 #include "application.h"
 
-auto main() -> int
+auto main(int argc, char *argv[]) -> int
 {
   try {
-    Application app{"localhost", 1438};
+    if (argc != 2) {
+      std::println("Usage: little-sb-client <player-name>");
+      return 0;
+    }
+
+    Application app{"localhost", 1438, argv[1]};
   }
   catch (std::exception &e) {
     std::println("Exception: {}", e.what());
