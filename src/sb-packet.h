@@ -46,7 +46,7 @@ struct Sb_packet {
 
   struct Header {
     std::array<char, protocol_length> protocol_name{this_protocol_name};
-    Sender_type sender_type{};
+    Sender_type sender_type;
     Field<max_sender_name_length> sender_name;
   };
 

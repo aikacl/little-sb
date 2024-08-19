@@ -1,7 +1,7 @@
 #pragma once
 
 #include "player.h"
-#include "sb-protocol.h"
+#include "sb-packet.h"
 #include <asio.hpp>
 #include <ranges>
 #include <string_view>
@@ -99,5 +99,5 @@ private:
 
   std::unordered_map<std::string, Player> _players;
   std::unordered_map<std::string, bool> _online;
-  asio::ip::tcp::acceptor _acceptor;
+  tcp::acceptor _acceptor;
 };
