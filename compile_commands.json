@@ -1,11 +1,11 @@
 [
 {
   "directory": "/home/shelpam/Documents/projects/little-sb",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb-client/linux/x86_64/release/src/little-sb-client.cpp.o", "src/little-sb-client.cpp"],
-  "file": "src/little-sb-client.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-isystem", "/home/shelpam/.xmake/packages/s/spdlog/v1.14.1/469f312ffeff47d9aa249e3ed8e400dc/include", "-o", "build/.objs/little-sb-server/linux/x86_64/release/src/little-sb-server.cpp.o", "src/little-sb-server.cpp"],
+  "file": "src/little-sb-server.cpp"
 },
 {
   "directory": "/home/shelpam/Documents/projects/little-sb",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-o", "build/.objs/little-sb-server/linux/x86_64/release/src/little-sb-server.cpp.o", "src/little-sb-server.cpp"],
-  "file": "src/little-sb-server.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-std=c++26", "-Ithird-party/asio-1.30.2/include", "-isystem", "/home/shelpam/.xmake/packages/s/spdlog/v1.14.1/469f312ffeff47d9aa249e3ed8e400dc/include", "-o", "build/.objs/little-sb-client/linux/x86_64/release/src/little-sb-client.cpp.o", "src/little-sb-client.cpp"],
+  "file": "src/little-sb-client.cpp"
 }]

@@ -7,5 +7,5 @@ enum class State : std::uint8_t {
   Starting,
   Running,
   Ended,
-  Should_terminate,
+  Should_stop,
 };

@@ -2,8 +2,8 @@
 
 #include "player.h"
 #include <algorithm>
+#include <format>
 #include <queue>
-#include <thread>
 
 class Game {
 public:
