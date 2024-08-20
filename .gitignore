@@ -2,3 +2,4 @@
 build/
 vs2022/
 .cache/
+compile_commands.json
