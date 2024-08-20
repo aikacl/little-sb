@@ -128,8 +128,8 @@ struct Sb_packet {
 };
 
 template <> struct fmt::formatter<Sb_packet> : fmt::formatter<std::string> {
-  static constexpr auto format(Sb_packet const &packet,
-                               format_context &ctx) -> decltype(ctx.out())
+  static auto format(Sb_packet const &packet,
+                     format_context &ctx) -> decltype(ctx.out())
   {
     return fmt::format_to(ctx.out(), "[protocol: {}, sender({}): {}, body: {}]",
                           std::string_view{packet.header.protocol_name},
