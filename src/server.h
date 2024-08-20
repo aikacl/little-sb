@@ -16,7 +16,7 @@ public:
   Server(std::uint16_t const bind_port)
       : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
   {
-    spdlog::set_level(spdlog::level::debug);
+    spdlog::set_level(spdlog::level::info);
 
     run();
   }
@@ -54,6 +54,9 @@ private:
               return handle_packet(session, packet);
             });
             if (_responding_to_publishing.contains(session)) {
+              spdlog::info("{} disconnected",
+                           _publishing_session_to_name.at(
+                               _responding_to_publishing.at(session)));
               close_session(
                   _responding_to_publishing.extract(session).mapped());
             }

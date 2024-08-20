@@ -15,7 +15,7 @@ public:
         _request_session{std::make_shared<Session>(connect(host, port))},
         _state{State::Greeting}, _player_name{player_name}
   {
-    spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::info);
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
     run();
