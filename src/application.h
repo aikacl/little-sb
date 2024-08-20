@@ -13,8 +13,9 @@ public:
               std::string_view const player_name)
       : _subscribing_session{std::make_shared<Session>(connect(host, port))},
         _request_session{std::make_shared<Session>(connect(host, port))},
-        _player_name{player_name}
+        _state{State::Greeting}, _player_name{player_name}
   {
+    spdlog::set_level(spdlog::level::trace);
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
     run();
@@ -55,9 +56,11 @@ private:
     std::thread{[this]() {
       _subscribing_session->start([](Sb_packet const &packet) {
         spdlog::info("Server message: {}", packet.body.to_string());
+        return true;
       });
     }}.detach();
 
+    // The order of the following two lines can not be inversed.
     _subscribing_session->write(Sb_packet{
         Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
         Sb_packet_type::Login, "Subscribe"});
@@ -182,7 +185,7 @@ private:
   asio::io_context _io_context;
   Session_ptr _subscribing_session;
   Session_ptr _request_session;
-  State _state{State::Greeting};
+  State _state;
   std::string _player_name;
   std::uint64_t _game_id{};
 };

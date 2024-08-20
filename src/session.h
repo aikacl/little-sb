@@ -26,7 +26,8 @@ public:
     return _socket;
   }
 
-  void start(std::function<void(Sb_packet const &)> const &process_packet)
+  void
+  start(std::function<bool(Sb_packet const &)> const &process_packet_callback)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
     for (;;) {
@@ -35,9 +36,11 @@ public:
       if (ec == asio::error::eof) {
         return;
       }
-      spdlog::debug("Read packet: {}", packet);
       handle_error(ec);
-      process_packet(packet);
+      spdlog::debug("Read packet: {}", packet);
+      if (!process_packet_callback(packet)) {
+        return;
+      }
     }
   }
 

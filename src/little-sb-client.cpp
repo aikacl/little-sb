@@ -8,7 +8,6 @@ auto main(int argc, char *argv[]) -> int
       return 0;
     }
 
-    spdlog::set_level(spdlog::level::info);
     Application app{"localhost", 1438, argv[1]};
   }
   catch (std::exception &e) {
