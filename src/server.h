@@ -16,22 +16,18 @@ public:
   Server(std::uint16_t const bind_port)
       : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
   {
-    spdlog::set_level(spdlog::level::info);
-
-    run();
-  }
-
-private:
-  [[nodiscard]] static constexpr auto tick_interval()
-  {
-    return std::chrono::milliseconds{std::chrono::seconds{1}} /
-           max_tick_per_second;
   }
 
   void run()
   {
     process_games();
     do_accept();
+  }
+private:
+  [[nodiscard]] static constexpr auto tick_interval()
+  {
+    return std::chrono::milliseconds{std::chrono::seconds{1}} /
+           max_tick_per_second;
   }
 
   void do_accept()

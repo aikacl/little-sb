@@ -15,10 +15,34 @@ public:
         _request_session{std::make_shared<Session>(connect(host, port))},
         _state{State::Greeting}, _player_name{player_name}
   {
-    spdlog::set_level(spdlog::level::info);
+    spdlog::trace("Call {}", std::source_location::current().function_name());
+  }
+
+  void run()
+  {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    run();
+    std::thread{[this]() {
+      _subscribing_session->start([](Sb_packet const &packet) {
+        spdlog::info("Server message: {}", packet.body.to_string());
+        return true;
+      });
+    }}.detach();
+
+    // The order of the following two lines can not be inversed.
+    _subscribing_session->write(Sb_packet{
+        Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
+        Sb_packet_type::Login, "Subscribe"});
+
+    spdlog::info(
+        "Connected to the server: {}",
+        _request_session->request<std::string>(Sb_packet{
+            Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
+            Sb_packet_type::Login, "Request"}));
+
+    while (!should_stop()) {
+      tick();
+    }
   }
 
 private:
@@ -47,33 +71,6 @@ private:
   [[nodiscard]] auto should_stop() const -> bool
   {
     return _state == State::Should_stop;
-  }
-
-  void run()
-  {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-
-    std::thread{[this]() {
-      _subscribing_session->start([](Sb_packet const &packet) {
-        spdlog::info("Server message: {}", packet.body.to_string());
-        return true;
-      });
-    }}.detach();
-
-    // The order of the following two lines can not be inversed.
-    _subscribing_session->write(Sb_packet{
-        Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
-        Sb_packet_type::Login, "Subscribe"});
-
-    spdlog::info(
-        "Connected to the server: {}",
-        _request_session->request<std::string>(Sb_packet{
-            Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
-            Sb_packet_type::Login, "Request"}));
-
-    while (!should_stop()) {
-      tick();
-    }
   }
 
   void tick()

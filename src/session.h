@@ -35,10 +35,21 @@ public:
       auto const packet{read(ec)};
       if (ec == asio::error::eof) {
         return;
+      } else if (ec) {
+        // Do not throw exception because client can construct a malformed package,
+        // or just not responding to us. Throwing exception can cause server stop.
+        spdlog::error("Error occurred: {}, closing this session.", ec.message());
+        return;
       }
-      handle_error(ec);
       spdlog::debug("Read packet: {}", packet);
-      if (!process_packet_callback(packet)) {
+
+      // Same as above
+      try {
+        if (!process_packet_callback(packet)) {
+          return;
+        }
+      } catch (std::runtime_error &re) {
+        spdlog::error("Error occurred: {}, closing this session.", re.what());
         return;
       }
     }
