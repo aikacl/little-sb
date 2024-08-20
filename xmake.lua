@@ -4,6 +4,7 @@ function mingw_special_settings()
     end
 end
 
+add_rules("mode.debug", "mode.release")
 set_languages("cxxlatest")
 add_requires("spdlog", "asio")
 
@@ -18,5 +19,8 @@ target("little-sb-client")
 target("little-sb-server")
     set_kind("binary")
     add_files("src/little-sb-server.cpp")
+    if is_mode("debug") then
+        add_defines("DEBUG")
+    end
     add_packages("spdlog", "asio")
     mingw_special_settings()
