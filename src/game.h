@@ -31,17 +31,17 @@ public:
     }
   }
 
-  [[nodiscard]] auto id() const
+  [[nodiscard]] auto id() const -> std::uint64_t
   {
     return _id;
   }
 
-  [[nodiscard]] auto pending_events() -> auto &
+  [[nodiscard]] auto pending_events() -> std::queue<std::string> &
   {
     return _pending_events;
   }
 
-  [[nodiscard]] auto is_ended() const
+  [[nodiscard]] auto is_ended() const -> bool
   {
     return _is_ended;
   }

@@ -4,16 +4,16 @@
 #include "split-by.h"
 #include "state.h"
 #include <iostream>
-#include <print>
 #include <string>
+#include <string_view>
 
 class Application {
 public:
   Application(std::string_view const host, std::uint16_t const port,
               std::string_view const player_name)
       : _subscribing_session{std::make_shared<Session>(connect(host, port))},
-        _request_session{std::make_shared<Session>(connect(host, port))},
-        _state{State::Greeting}, _player_name{player_name}
+        _requesting_session{std::make_shared<Session>(connect(host, port))},
+        _player_name{player_name}
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
   }
@@ -22,12 +22,12 @@ public:
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    std::thread{[this]() {
-      _subscribing_session->start([](Sb_packet const &packet) {
-        spdlog::info("Server message: {}", packet.body.to_string());
-        return true;
-      });
-    }}.detach();
+    _subscribing_session->start(
+        [](Sb_packet const &packet) {
+          spdlog::info("Server message: {}", packet.body.to_string());
+          return true;
+        },
+        []() {});
 
     // The order of the following two lines can not be inversed.
     _subscribing_session->write(Sb_packet{
@@ -36,13 +36,18 @@ public:
 
     spdlog::info(
         "Connected to the server: {}",
-        _request_session->request<std::string>(Sb_packet{
+        _requesting_session->request<std::string>(Sb_packet{
             Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
             Sb_packet_type::Login, "Request"}));
 
     while (!should_stop()) {
       tick();
     }
+
+    _subscribing_session->stop();
+    _requesting_session->stop();
+
+    _io_context.run();
   }
 
 private:
@@ -62,7 +67,7 @@ private:
 
   auto request(std::string_view const req) -> std::string
   {
-    return _request_session->request<std::string>(
+    return _requesting_session->request<std::string>(
         Sb_packet{Sb_packet_sender{.type = Sb_packet_sender::Type::Client,
                                    .name{_player_name}},
                   Sb_packet_type::Message, req});
@@ -181,8 +186,8 @@ private:
 
   asio::io_context _io_context;
   Session_ptr _subscribing_session;
-  Session_ptr _request_session;
-  State _state;
+  Session_ptr _requesting_session;
+  State _state{State::Greeting};
   std::string _player_name;
   std::uint64_t _game_id{};
 };
