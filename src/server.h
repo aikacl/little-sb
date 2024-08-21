@@ -187,7 +187,7 @@ private:
           buf += player.name();
           buf += ' ';
           buf += std::to_string(player.health());
-          buf += '\n';
+          buf += '\t';
         }
       }
       return buf;
