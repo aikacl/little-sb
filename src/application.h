@@ -2,12 +2,19 @@
 
 #include "session.h"
 #include "split-by.h"
-#include "state.h"
 #include <iostream>
 #include <string>
 #include <string_view>
 
 class Application {
+  enum class State : std::uint8_t {
+    Greeting,
+    Starting,
+    Running,
+    Ended,
+    Should_stop,
+  };
+
 public:
   Application(std::string_view const host, std::uint16_t const port,
               std::string_view const player_name)
