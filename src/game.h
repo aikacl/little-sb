@@ -7,22 +7,22 @@
 
 class Game {
 public:
-  Game(std::uint64_t const id, std::array<Player, 2> players)
-      : _id{id}, _players{std::move(players)}
+  Game(std::uint64_t const id, std::array<Player *, 2> const &players)
+      : _id{id}, _players{players}
   {
   }
 
   void tick()
   {
     if (std::ranges::all_of(
-            _players, [](auto &player) { return player.health() != 0; })) {
+            _players, [](auto &player) { return player->health() != 0; })) {
       auto const &attacker{_players.at(_turn % 2)};
       auto &target{_players.at((_turn % 2) ^ 1)};
 
-      attacker.attack(target);
+      attacker->attack(*target);
 
       _pending_events.push(
-          std::format("{} {}", target.name(), target.health()));
+          std::format("{} {}", target->name(), target->health()));
 
       ++_turn;
     }
@@ -49,7 +49,7 @@ public:
 private:
   std::uint64_t _id;
   std::queue<std::string> _pending_events;
-  std::array<Player, 2> _players;
+  std::array<Player *, 2> _players;
   bool _is_ended{};
   int _turn{};
 };

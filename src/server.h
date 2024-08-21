@@ -89,11 +89,12 @@ private:
               spdlog::trace("Call {}",
                             std::source_location::current().function_name());
               if (_responding_to_publishing.contains(session)) {
-                spdlog::info("{} disconnected",
-                             _publishing_session_to_name.at(
-                                 _responding_to_publishing.at(session)));
+                auto const &player_name{_publishing_session_to_name.at(
+                    _responding_to_publishing.at(session))};
+                spdlog::info("{} disconnected", player_name);
                 close_session(
                     _responding_to_publishing.extract(session).mapped());
+                remove_player(player_name);
               }
             });
       }
@@ -109,6 +110,11 @@ private:
     auto const name{_publishing_session_to_name.extract(session).mapped()};
     spdlog::trace("Closing connection to '{}'", name);
     _publishing_name_to_session.extract(name);
+  }
+
+  void remove_player(std::string const &player_name)
+  {
+    _players.extract(player_name);
   }
 
   auto handle_packet(Session_ptr const &session,
@@ -136,7 +142,8 @@ private:
         if (packet.body.to_string() == "Request") {
           _responding_to_publishing.insert(
               {session, wait_for_publishing_session(from)});
-          _players.insert({from, Player{from}});
+          _players.insert(
+              {from, Player{from, little_sb::random::uniform(20, 25), 3}});
           respond(session, from, std::format("Ok, {} logged in.", from));
           return true;
         }
@@ -176,9 +183,11 @@ private:
     if (cmd == "list-players") {
       std::string buf;
       if (argv[1] == "online") {
-        for (auto const &[k, _] : _publishing_name_to_session) {
-          buf += k;
+        for (auto const &[_, player] : _players) {
+          buf += player.name();
           buf += ' ';
+          buf += std::to_string(player.health());
+          buf += '\n';
         }
       }
       return buf;
@@ -191,7 +200,8 @@ private:
         return "Player not found.";
       }
       auto const game_id{
-          allocate_game({_players.at(player_name), _players.at(argv[1])}).id()};
+          allocate_game({&_players.at(player_name), &_players.at(argv[1])})
+              .id()};
       publish(argv[1],
               std::format("You received a battle with {}", player_name));
       return std::format("ok {}", game_id);
@@ -235,7 +245,7 @@ private:
     spdlog::info("{}.respond->{}: {}", _name, to, message);
   }
 
-  auto allocate_game(std::array<Player, 2> const &players) -> Game &
+  auto allocate_game(std::array<Player *, 2> const &players) -> Game &
   {
     auto const id{_games.empty() ? std::uint64_t{}
                                  : _games.rbegin()->first + 1};

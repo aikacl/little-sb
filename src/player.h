@@ -6,7 +6,11 @@
 
 class Player {
 public:
-  explicit Player(std::string_view const name) : _name{name} {}
+  Player(std::string_view const name, std::int32_t const health,
+         std::int32_t const defense)
+      : _name{name}, _health{health}, _defense{defense}
+  {
+  }
 
   auto attack(Player &target) const -> std::uint32_t
   {
@@ -34,10 +38,10 @@ private:
   [[nodiscard]] auto damage_to(Player const &target) const -> std::int32_t
   {
     return std::max(
-        (little_sb::random::uniform(1, 20) - _health) / 2 - target.defense, 1);
+        (little_sb::random::uniform(1, 20) - _health) / 2 - target._defense, 1);
   }
 
   std::string _name;
-  std::int32_t _health{20};
-  std::int32_t defense{3};
+  std::int32_t _health;
+  std::int32_t _defense;
 };
