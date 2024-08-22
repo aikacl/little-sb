@@ -36,7 +36,7 @@ public:
         },
         []() {});
 
-    // The order of the following two lines can not be inversed.
+    // The order of two statements below can not be inversed.
     _subscribing_session->write(Sb_packet{
         Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
         Sb_packet_type::Login, "Subscribe"});

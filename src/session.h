@@ -50,6 +50,7 @@ public:
   void write()
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
+
     while (!_packets_queue.empty()) {
       auto const &data{_packets_queue.front()};
       std::error_code ec;
@@ -63,6 +64,7 @@ public:
   void write(Sb_packet const &packet)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
+
     push(packet);
     write();
   }
@@ -70,6 +72,7 @@ public:
   auto read() -> Sb_packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
+
     std::error_code ec;
     auto const packet{read(ec)};
     handle_error(ec);
@@ -79,6 +82,7 @@ public:
   auto read(std::error_code &ec) -> Sb_packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
+
     Sb_packet packet;
     _socket.read_some(asio::mutable_buffer{packet}, ec);
     return packet;
@@ -109,7 +113,7 @@ private:
 
     _socket.async_read_some(
         asio::mutable_buffer{_packet},
-        // Captures self  by value to extend session's lifetime
+        // Captures self by value to extend session's lifetime
         [self{shared_from_this()},
          on_reading_packet{std::move(on_reading_packet)},
          post_session_end{std::move(post_session_end)}](
