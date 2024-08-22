@@ -2,7 +2,10 @@
 
 #include "random.h"
 #include <cstdint>
+#include <nlohmann/json.hpp>
 #include <string>
+
+using nlohmann::json;
 
 class Player {
 public:
@@ -44,4 +47,6 @@ private:
   std::string _name;
   std::int32_t _health;
   std::int32_t _defense;
+
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Player, _name, _health, _defense)
 };

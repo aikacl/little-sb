@@ -74,17 +74,10 @@ public:
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
     std::error_code ec;
-    auto const packet{read(ec)};
-    handle_error(ec);
-    return packet;
-  }
-
-  auto read(std::error_code &ec) -> Sb_packet
-  {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-
     Sb_packet packet;
     _socket.read_some(asio::mutable_buffer{packet}, ec);
+    handle_error(ec);
+    spdlog::debug("Read packet: {}", packet);
     return packet;
   }
 
@@ -159,10 +152,12 @@ private:
         });
   }
 
-  std::atomic<bool> _should_stop; // For start()
   tcp::socket _socket;
+  // These two lines are for asynchronoized operations
+  std::atomic<bool> _should_stop; // For Session::start()
   Sb_packet _packet; // In asynchronoized environment, this as may be read in
                      // future, should be placed in member field to keep its
                      // lifetime
+  // This is for synchronoized operations
   std::queue<Sb_packet> _packets_queue;
 };

@@ -8,6 +8,7 @@
 #include <atomic>
 #include <map>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <string_view>
 
 using asio::ip::tcp;
@@ -181,16 +182,11 @@ private:
     auto const &cmd{argv[0]};
 
     if (cmd == "list-players") {
-      std::string buf;
-      if (argv[1] == "online") {
-        for (auto const &[_, player] : _players) {
-          buf += player.name();
-          buf += ' ';
-          buf += std::to_string(player.health());
-          buf += '\t';
-        }
+      json json;
+      for (auto const &[_, player] : _players) {
+        json.push_back(player);
       }
-      return buf;
+      return json.dump();
     }
     if (cmd == "battle") {
       if (argv[1] == player_name) {

@@ -174,7 +174,7 @@ private:
     std::vector<std::string> parts;
 
     for (;;) {
-      spdlog::info("Players online: {}", request("list-players online"));
+      spdlog::info("Players online: {}", request("list-players"));
       spdlog::info("Who do you want battle with?");
       std::string choice;
       std::getline(std::cin, choice);
