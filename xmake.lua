@@ -6,13 +6,13 @@ end
 
 add_rules("mode.debug", "mode.release")
 set_languages("cxxlatest")
-add_requires("asio", "spdlog")
+add_requires("asio", "nlohmann_json", "spdlog")
 
 
 target("little-sb-client")
     set_kind("binary")
     add_files("src/little-sb-client.cpp")
-    add_packages("asio", "spdlog")
+    add_packages("asio", "nlohmann_json", "spdlog")
     mingw_special_settings()
 
 
@@ -22,5 +22,5 @@ target("little-sb-server")
     if is_mode("debug") then
         add_defines("DEBUG")
     end
-    add_packages("asio", "spdlog")
+    add_packages("asio", "nlohmann_json", "spdlog")
     mingw_special_settings()
