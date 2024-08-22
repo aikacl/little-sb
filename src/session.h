@@ -27,8 +27,8 @@ public:
   }
 
   // This also extends its lifetime when mangaged by std::shared_ptr
-  void start(std::function<bool(Sb_packet const &)> &&on_reading_packet,
-             std::function<void()> &&post_session_end)
+  void start(std::function<bool(Sb_packet const &)> on_reading_packet,
+             std::function<void()> post_session_end)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
@@ -155,7 +155,7 @@ private:
         });
   }
 
-  bool _should_stop{}; // For start()
+  std::atomic<bool> _should_stop; // For start()
   tcp::socket _socket;
   Sb_packet _packet; // In asynchronoized environment, this as may be read in
                      // future, should be placed in member field to keep its
