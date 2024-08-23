@@ -17,7 +17,7 @@ public:
   static auto instance(std::uint16_t bind_port = 0) -> Server &;
 
 private:
-  Server(std::uint16_t bind_port);
+  explicit Server(std::uint16_t bind_port);
   [[nodiscard]] static constexpr auto tick_interval();
   void do_accept();
   // Only accepts publishing sessions

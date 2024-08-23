@@ -21,7 +21,7 @@ mingw_special_settings()
 
 target("little-sb-client")
     set_kind("binary")
-    add_files("src/little-sb-client.cpp")
+    add_files("src/little-sb-client.cpp", src/application.cpp)
 
 target("little-sb-server")
     set_kind("binary")

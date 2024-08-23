@@ -30,6 +30,7 @@ auto Server::instance(std::uint16_t const bind_port) -> Server &
   static Server the_instance{bind_port};
   return the_instance;
 }
+
 Server::Server(std::uint16_t const bind_port)
     : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
 {
@@ -41,6 +42,7 @@ constexpr auto Server::tick_interval()
   return std::chrono::milliseconds{std::chrono::seconds{1}} /
          max_tick_per_second;
 }
+
 void Server::do_accept()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
