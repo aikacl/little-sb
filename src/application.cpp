@@ -67,7 +67,7 @@ void Application::write(std::string message)
 
 auto Application::should_stop() const -> bool
 {
-  return _state == State::Should_stop;
+  return _state == State::should_stop;
 }
 
 void Application::tick()
@@ -75,16 +75,16 @@ void Application::tick()
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
   switch (_state) {
-  case State::Greeting:
+  case State::greeting:
     handle_greeting();
     return;
-  case State::Starting:
+  case State::starting:
     handle_starting();
     return;
-  case State::Running:
+  case State::running:
     handle_running();
     return;
-  case State::Ended:
+  case State::ended:
     handle_ended();
     return;
   default: // Unreachable
@@ -113,7 +113,7 @@ void Application::handle_starting()
   /*  std::println("{} has {} health.", player.name(), player.health());*/
   /*}*/
   /*std::println("");*/
-  _state = State::Running;
+  _state = State::running;
 }
 
 void Application::handle_running()
@@ -137,7 +137,7 @@ void Application::poll_events()
     spdlog::info("Event: {}", event);
 
     if (event == "ended") {
-      _state = State::Ended;
+      _state = State::ended;
       break;
     }
   }
@@ -152,7 +152,7 @@ void Application::handle_ended()
     start_new_game(_game_id);
   }
   else {
-    _state = State::Should_stop;
+    _state = State::should_stop;
   }
 }
 
@@ -175,5 +175,5 @@ void Application::start_new_game(std::uint64_t &game_id)
 
   game_id = std::stoull(parts[1]);
   poll_events();
-  _state = State::Starting;
+  _state = State::starting;
 }

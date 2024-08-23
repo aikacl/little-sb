@@ -8,11 +8,11 @@
 
 class Application {
   enum class State : std::uint8_t {
-    Greeting,
-    Starting,
-    Running,
-    Ended,
-    Should_stop,
+    greeting,
+    starting,
+    running,
+    ended,
+    should_stop,
   };
 
 public:
@@ -45,7 +45,7 @@ private:
   asio::io_context _io_context;
   Session_ptr _subscribing_session;
   Session_ptr _requesting_session;
-  State _state{State::Greeting};
+  State _state{State::greeting};
   std::string _player_name;
   std::uint64_t _game_id{};
 };
