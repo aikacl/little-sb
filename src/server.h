@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command.h"
 #include "game.h"
 #include "sb-packet.h"
 #include "session.h"
@@ -29,11 +30,11 @@ private:
   //  should continue to read another packet
   auto handle_packet(Session_ptr const &session,
                      Sb_packet const &packet) -> bool;
-  auto handle_player_message(Session_ptr const &session,
+  auto handle_player_command(Session_ptr const &session,
                              std::string const &from,
-                             std::string_view command) -> bool;
+                             Command const &command) -> bool;
   auto parse_player_message(std::string const &player_name,
-                            std::string_view command) -> std::string;
+                            Command const &command) -> std::string;
   void publish(std::string const &to, std::string message);
   void respond(Session_ptr const &session, std::string_view to,
                std::string message);

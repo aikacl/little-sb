@@ -4,35 +4,22 @@
 #include <string_view>
 #include <unordered_set>
 
-class Message_receiver {
+class Observer {
 public:
-  virtual ~Message_receiver() = 0;
-
-  virtual void receive(std::string_view message) = 0;
+  Observer(const Observer &) = default;
+  Observer(Observer &&) = delete;
+  auto operator=(const Observer &) -> Observer & = default;
+  auto operator=(Observer &&) -> Observer & = delete;
+  virtual ~Observer() = 0;
+  virtual void update(std::string_view message) = 0;
 };
 
 class Chat_room {
 public:
-  void register_player(std::shared_ptr<Message_receiver> const &receiver)
-  {
-    _receivers.insert(receiver);
-  }
-
-  void deregister_player(std::shared_ptr<Message_receiver> const &receiver)
-  {
-    _receivers.extract(receiver);
-  }
-
-  void deliver_message(std::string_view const &message)
-  {
-    std::erase_if(_receivers,
-                  [](auto const &player) { return player.expired(); });
-
-    for (auto const &receiver : _receivers) {
-      receiver.lock()->receive(message);
-    }
-  }
+  void attach(std::shared_ptr<Observer> const &observer);
+  void detach(std::shared_ptr<Observer> const &observer);
+  void notify(std::string_view message);
 
 private:
-  std::unordered_set<std::weak_ptr<Message_receiver>> _receivers;
+  std::unordered_set<std::weak_ptr<Observer>> _receivers;
 };

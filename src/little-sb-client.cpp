@@ -1,8 +1,9 @@
 #include "application.h"
+#include <spdlog/spdlog.h>
 
 auto main(int argc, char *argv[]) -> int
 {
-  spdlog::set_level(spdlog::level::trace);
+  spdlog::set_level(spdlog::level::info);
 
   try {
     if (argc != 2) {

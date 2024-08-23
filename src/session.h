@@ -44,20 +44,6 @@ public:
     _should_stop = true;
   }
 
-  void write()
-  {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-
-    while (!_packets_queue.empty()) {
-      auto const &packet{_packets_queue.front()};
-      std::error_code ec;
-      asio::write(_socket, asio::buffer(json(packet).dump()), ec);
-      spdlog::debug("Sent packet: {}", packet);
-      handle_error(ec);
-      _packets_queue.pop();
-    }
-  }
-
   void write(Sb_packet const &packet)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
@@ -72,9 +58,10 @@ public:
 
     std::error_code ec;
     std::array<char, buffer_size> buffer{};
-    _socket.read_some(asio::buffer(buffer), ec);
+    auto const read_length{_socket.read_some(asio::buffer(buffer), ec)};
     handle_error(ec);
-    auto const packet{json::parse(buffer).get<Sb_packet>()};
+    auto const packet{json::parse(std::string_view{buffer.data(), read_length})
+                          .get<Sb_packet>()};
     spdlog::debug("Read packet: {}", packet);
     return packet;
   }
@@ -100,7 +87,7 @@ private:
         [self{shared_from_this()},
          on_reading_packet{std::move(on_reading_packet)},
          post_session_end{std::move(post_session_end)}](
-            std::error_code const ec, std::size_t const /*length*/) mutable {
+            std::error_code const ec, std::size_t const read_length) mutable {
           spdlog::trace("Call {}",
                         std::source_location::current().function_name());
 
@@ -122,8 +109,9 @@ private:
             return;
           }
 
-          spdlog::debug("Read buffer: {}", std::string_view{self->_buffer});
-          auto const packet{json::parse(self->_buffer).get<Sb_packet>()};
+          auto const packet{
+              json::parse(std::string_view{self->_buffer.data(), read_length})
+                  .get<Sb_packet>()};
           spdlog::debug("Read packet: {}", packet);
 
           // Same as above
@@ -143,6 +131,19 @@ private:
             return;
           }
         });
+  }
+  void write()
+  {
+    spdlog::trace("Call {}", std::source_location::current().function_name());
+
+    while (!_packets_queue.empty()) {
+      auto const &packet{_packets_queue.front()};
+      std::error_code ec;
+      asio::write(_socket, asio::buffer(json(packet).dump()), ec);
+      spdlog::debug("Sent packet: {}", packet);
+      handle_error(ec);
+      _packets_queue.pop();
+    }
   }
 
   tcp::socket _socket;

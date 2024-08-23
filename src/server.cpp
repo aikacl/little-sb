@@ -1,6 +1,9 @@
 #include "server.h"
-#include "split-by.h"
+#include "command.h"
+#include <algorithm>
+#include <cstdint>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <string_view>
 
 void Server::run()
@@ -58,9 +61,6 @@ void Server::do_accept()
       session->start(
           // TODO(shelpam): issue here, should I use &session instead?
           [this, session](Sb_packet const &packet) {
-            spdlog::trace("Call {}",
-                          std::source_location::current().function_name());
-
             return handle_packet(session, packet);
           },
           // TODO(shelpam): issue here, same as above.
@@ -99,28 +99,30 @@ auto Server::handle_packet(Session_ptr const &session,
   }
 
   auto const &from{packet.sender.username()};
-  auto const message{json::parse(packet.payload).get<std::string>()};
+  Command const command{json::parse(packet.payload)};
 
   // We must consider sign ups, but now ignore it.
   if (true || _players.contains(from)) {
-    return handle_player_message(session, from, message);
+    return handle_player_command(session, from, command);
   }
   // Unreachable
   throw std::logic_error{"Unreachable"};
 }
 
-auto Server::handle_player_message(Session_ptr const &session,
+auto Server::handle_player_command(Session_ptr const &session,
                                    std::string const &from,
-                                   std::string_view const command) -> bool
+                                   Command const &command) -> bool
 {
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
   // TODO(ShelpAm): add authentication.
-  if (command == "Subscribe") {
+  if (command.name() == "Subscribe") {
     _publishing_name_to_session.insert({from, session});
     _publishing_session_to_name.insert({session, from});
     respond(session, from, "Ok, subscribed");
     return false;
   }
-  if (command == "Request") {
+  if (command.name() == "Request") {
     _responding_to_publishing.insert(
         {session, wait_for_publishing_session(from)});
     _players.insert(
@@ -133,50 +135,58 @@ auto Server::handle_player_message(Session_ptr const &session,
 }
 
 auto Server::parse_player_message(std::string const &player_name,
-                                  std::string_view command) -> std::string
+                                  Command const &command) -> std::string
 {
-  auto const argv{split_by(command)};
-  auto const &cmd{argv[0]};
+  spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  if (cmd == "list-players") {
+  if (command.name() == "battle") {
+    auto const &opponent{command.get_arg<std::string>(0)};
+    if (opponent == player_name) {
+      return "Can not select yourself as a component.";
+    }
+    if (!_publishing_name_to_session.contains(opponent)) {
+      return "Player not found.";
+    }
+    auto const game_id{
+        allocate_game({&_players.at(player_name), &_players.at(opponent)})
+            .id()};
+    publish(opponent,
+            std::format("You received a battle with {}", player_name));
+    return std::format("ok {}", game_id);
+  }
+  if (command.name() == "damage") {
+  }
+  if (command.name() == "list-players") {
     json json;
     for (auto const &[_, player] : _players) {
       json.push_back(player);
     }
     return json.dump();
   }
-  if (cmd == "battle") {
-    if (argv[1] == player_name) {
-      return "Can not select yourself as a component.";
+  if (command.name() == "query-event") {
+    auto const game_id{command.get_arg<std::int64_t>(0)};
+    auto &game{_games.at(game_id)};
+    if (game.ended()) {
+      _games.extract(game_id);
+      return "ended";
     }
-    if (!_publishing_name_to_session.contains(argv[1])) {
-      return "Player not found.";
+    auto &events_queue{game.pending_events()};
+    if (events_queue.empty()) {
+      return "no";
     }
-    auto const game_id{
-        allocate_game({&_players.at(player_name), &_players.at(argv[1])}).id()};
-    publish(argv[1], std::format("You received a battle with {}", player_name));
-    return std::format("ok {}", game_id);
+    auto const event{std::move(events_queue.front())};
+    events_queue.pop();
+    return event;
   }
-  if (cmd == "query") {
-    if (argv[1] == "event") {
-      auto &game{_games.at(std::stoull(argv[2]))};
-      auto &events_queue{game.pending_events()};
-      if (game.ended()) {
-        _games.extract(std::stoull(argv[2]));
-        return "ended";
-      }
-      if (events_queue.empty()) {
-        return "no";
-      }
-      auto const event{std::move(events_queue.front())};
-      events_queue.pop();
-      return event;
+  if (command.name() == "say") {
+    auto const content{command.get_arg<std::string>(0)};
+    for (auto const &[name, _] : _publishing_name_to_session) {
+      publish(name, content);
     }
-  }
-  if (cmd == "damage") {
+    return "ok";
   }
 
-  return std::format("Unrecognized command {}", cmd);
+  return std::format("Unrecognized command {}", command.name());
 }
 
 void Server::close_session_pairs(Session_ptr const &session)
@@ -190,12 +200,16 @@ void Server::close_session_pairs(Session_ptr const &session)
 
 void Server::remove_player(std::string const &player_name)
 {
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
   _players.extract(player_name);
 }
 
 auto Server::wait_for_publishing_session(std::string const &session_name)
     -> Session_ptr
 {
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
   while (!_publishing_name_to_session.contains(session_name)) {
   }
   return _publishing_name_to_session.at(session_name);
@@ -203,6 +217,8 @@ auto Server::wait_for_publishing_session(std::string const &session_name)
 
 void Server::publish(std::string const &to, std::string message)
 {
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
   _publishing_name_to_session.at(to)->write(Sb_packet{
       Sb_packet_sender{_name, _name}, json(std::move(message)).dump()});
   spdlog::debug("{}.publish->{}: {}", _name, to, message);
@@ -211,6 +227,8 @@ void Server::publish(std::string const &to, std::string message)
 void Server::respond(Session_ptr const &session, std::string_view const to,
                      std::string message)
 {
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
   session->write(Sb_packet{Sb_packet_sender{_name, _name},
                            json(std::move(message)).dump()});
   spdlog::debug("{}.respond->{}: {}", _name, to, message);
