@@ -9,6 +9,7 @@
 #include <queue>
 #include <source_location>
 #include <spdlog/spdlog.h>
+#include <string_view>
 
 using asio::ip::tcp;
 
@@ -121,6 +122,7 @@ private:
             return;
           }
 
+          spdlog::debug("Read buffer: {}", std::string_view{self->_buffer});
           auto const packet{json::parse(self->_buffer).get<Sb_packet>()};
           spdlog::debug("Read packet: {}", packet);
 
