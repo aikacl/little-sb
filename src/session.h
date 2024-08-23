@@ -16,6 +16,8 @@ class Session;
 using Session_ptr = std::shared_ptr<Session>;
 
 class Session : public std::enable_shared_from_this<Session> {
+  static constexpr std::size_t buffer_size{1024};
+
 public:
   Session() = delete;
 
@@ -41,21 +43,15 @@ public:
     _should_stop = true;
   }
 
-  void push(Sb_packet const &packet)
-  {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-    _packets_queue.push(packet);
-  }
-
   void write()
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
     while (!_packets_queue.empty()) {
-      auto const &data{_packets_queue.front()};
+      auto const &packet{_packets_queue.front()};
       std::error_code ec;
-      asio::write(_socket, asio::buffer(data), ec);
-      spdlog::debug("Sent packet: {}", data);
+      asio::write(_socket, asio::buffer(json(packet).dump()), ec);
+      spdlog::debug("Sent packet: {}", packet);
       handle_error(ec);
       _packets_queue.pop();
     }
@@ -65,7 +61,7 @@ public:
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    push(packet);
+    _packets_queue.push(packet);
     write();
   }
 
@@ -74,27 +70,20 @@ public:
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
     std::error_code ec;
-    Sb_packet packet;
-    _socket.read_some(asio::mutable_buffer{packet}, ec);
+    std::array<char, buffer_size> buffer{};
+    _socket.read_some(asio::buffer(buffer), ec);
     handle_error(ec);
+    auto const packet{json::parse(buffer).get<Sb_packet>()};
     spdlog::debug("Read packet: {}", packet);
     return packet;
   }
 
-  template <typename Result_type>
-  auto request(Sb_packet const &packet) -> Result_type
+  auto request(Sb_packet const &packet) -> Sb_packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    push(packet);
-    write();
-    auto const reply{read()};
-    if constexpr (std::same_as<Result_type, std::string>) {
-      return reply.to_string();
-    }
-    else {
-      return *static_cast<Result_type const *>(&reply);
-    }
+    write(packet);
+    return read();
   }
 
 private:
@@ -105,7 +94,7 @@ private:
                   std::source_location::current().function_name());
 
     _socket.async_read_some(
-        asio::mutable_buffer{_packet},
+        asio::buffer(_buffer),
         // Captures self by value to extend session's lifetime
         [self{shared_from_this()},
          on_reading_packet{std::move(on_reading_packet)},
@@ -131,11 +120,13 @@ private:
             post_session_end();
             return;
           }
-          spdlog::debug("Read packet: {}", self->_packet);
+
+          auto const packet{json::parse(self->_buffer).get<Sb_packet>()};
+          spdlog::debug("Read packet: {}", packet);
 
           // Same as above
           try {
-            if (on_reading_packet(self->_packet) && !self->_should_stop) {
+            if (on_reading_packet(packet) && !self->_should_stop) {
               self->do_async_read(std::move(on_reading_packet),
                                   std::move(post_session_end));
             }
@@ -153,11 +144,11 @@ private:
   }
 
   tcp::socket _socket;
-  // These two lines are for asynchronoized operations
+  // Two statement below are for asynchronoized operations
   std::atomic<bool> _should_stop; // For Session::start()
-  Sb_packet _packet; // In asynchronoized environment, this as may be read in
-                     // future, should be placed in member field to keep its
-                     // lifetime
+  // In asynchronoized environment, this as may be read in future, should be
+  // placed in member field to keep its lifetime
+  std::array<char, buffer_size> _buffer{};
   // This is for synchronoized operations
   std::queue<Sb_packet> _packets_queue;
 };

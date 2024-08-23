@@ -4,8 +4,8 @@
 #include <string_view>
 #include <vector>
 
-auto split_by(std::string_view const str,
-              char delim = ' ') -> std::vector<std::string>
+inline auto split_by(std::string_view const str,
+                     char delim = ' ') -> std::vector<std::string>
 {
   std::vector<std::string> parts;
   for (auto const &part : str | std::views::split(delim)) {

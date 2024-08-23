@@ -1,10 +1,12 @@
 #pragma once
 
+#include "sb-packet.h"
 #include "session.h"
 #include "split-by.h"
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <utility>
 
 class Application {
   enum class State : std::uint8_t {
@@ -31,30 +33,33 @@ public:
 
     _subscribing_session->start(
         [](Sb_packet const &packet) {
-          spdlog::info("Server message: {}", packet.body.to_string());
+          spdlog::info("Server message: {}", packet.payload);
           return true;
         },
         []() {});
 
-    // The order of two statements below can not be inversed.
-    _subscribing_session->write(Sb_packet{
-        Sb_packet_sender{Sb_packet_sender::Type::client, _player_name},
-        Sb_packet_type::login, "Subscribe"});
+    // We should first write subscribing session and then requesting session,
+    // because the server would expect for subscribing session to connect first.
+    // If not, saying that requesting session post request first, the server
+    // would wait for subscribing session to connect to it, which is a waste of
+    // server resources.
+    // We shouldn't use `request` here because we previously called
+    // `Session::start`, which will catch packet for use, conflicting with read
+    // packet here.
+    _subscribing_session->write(
+        Sb_packet{Sb_packet_sender{_player_name, _player_name},
+                  json("Subscribe").dump()});
 
-    spdlog::info(
-        "Connected to the server: {}",
-        _requesting_session->request<std::string>(Sb_packet{
-            Sb_packet_sender{Sb_packet_sender::Type::client, _player_name},
-            Sb_packet_type::login, "Request"}));
+    spdlog::info("Connected to the server: {}",
+                 request<std::string>("Request"));
 
     while (!should_stop()) {
+      _io_context.poll();
       tick();
     }
 
     _subscribing_session->stop();
     _requesting_session->stop();
-
-    _io_context.run();
   }
 
 private:
@@ -72,12 +77,20 @@ private:
     return socket;
   }
 
-  auto request(std::string_view const req) -> std::string
+  void write(std::string message)
   {
-    return _requesting_session->request<std::string>(
-        Sb_packet{Sb_packet_sender{.type = Sb_packet_sender::Type::client,
-                                   .name{_player_name}},
-                  Sb_packet_type::message, req});
+    _requesting_session->write(
+        Sb_packet{Sb_packet_sender{_player_name, _player_name},
+                  json(std::move(message)).dump()});
+  }
+
+  template <typename Result_type>
+  auto request(std::string request) -> Result_type
+  {
+    auto const packet{_requesting_session->request(
+        Sb_packet{Sb_packet_sender{_player_name, _player_name},
+                  json(std::move(request)).dump()})};
+    return json::parse(packet.payload).get<Result_type>();
   }
 
   [[nodiscard]] auto should_stop() const -> bool
@@ -88,21 +101,22 @@ private:
   void tick()
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
+
     switch (_state) {
     case State::Greeting:
       handle_greeting();
-      break;
+      return;
     case State::Starting:
       handle_starting();
-      break;
+      return;
     case State::Running:
       handle_running();
-      break;
+      return;
     case State::Ended:
       handle_ended();
-      break;
+      return;
     default: // Unreachable
-      break;
+      return;
     }
   }
 
@@ -140,7 +154,8 @@ private:
   void poll_events()
   {
     for (;;) {
-      auto const event{request(std::format("query event {}", _game_id))};
+      auto const event{
+          request<std::string>(std::format("query event {}", _game_id))};
 
       if (event == "no") {
         break;
@@ -174,11 +189,12 @@ private:
     std::vector<std::string> parts;
 
     for (;;) {
-      spdlog::info("Players online: {}", request("list-players"));
+      spdlog::info("Players online: {}", request<std::string>("list-players"));
       spdlog::info("Who do you want battle with?");
       std::string choice;
       std::getline(std::cin, choice);
-      auto const response{request(std::format("battle {}", choice))};
+      auto const response{
+          request<std::string>(std::format("battle {}", choice))};
       parts = split_by(response);
       if (parts[0] == "ok") {
         break;
