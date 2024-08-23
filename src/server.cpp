@@ -94,6 +94,7 @@ auto Server::handle_packet(Session_ptr const &session,
                 packet);
 
   if (packet.protocol != Sb_packet::this_protocol_name) {
+    spdlog::warn("Packet protocol is different from ours: {}", packet.protocol);
     return true;
   }
 
