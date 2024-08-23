@@ -27,7 +27,7 @@ public:
       ++_turn;
     }
     else {
-      _is_ended = true;
+      _ended = true;
     }
   }
 
@@ -41,15 +41,15 @@ public:
     return _pending_events;
   }
 
-  [[nodiscard]] auto is_ended() const -> bool
+  [[nodiscard]] auto ended() const -> bool
   {
-    return _is_ended;
+    return _ended;
   }
 
 private:
   std::uint64_t _id;
   std::queue<std::string> _pending_events;
   std::array<Player *, 2> _players;
-  bool _is_ended{};
+  bool _ended{};
   int _turn{};
 };

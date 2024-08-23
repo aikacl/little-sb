@@ -101,8 +101,8 @@ private:
   void do_async_read(std::function<bool(Sb_packet const &)> &&on_reading_packet,
                      std::function<void()> &&post_session_end)
   {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-    spdlog::trace("Scheduling reading packet");
+    spdlog::trace("Call {}, Scheduling reading packet",
+                  std::source_location::current().function_name());
 
     _socket.async_read_some(
         asio::mutable_buffer{_packet},

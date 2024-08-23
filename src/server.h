@@ -63,7 +63,7 @@ private:
     _acceptor.async_accept([this](std::error_code const ec,
                                   tcp::socket socket) {
       spdlog::trace("Call {}", std::source_location::current().function_name());
-      spdlog::debug("Accepted new connection; now {} other sessions are alive",
+      spdlog::debug("Accepted new connection. Now {} other sessions are alive.",
                     _publishing_session_to_name.size());
       if (!ec) {
         auto const session{std::make_shared<Session>(std::move(socket))};
@@ -75,13 +75,13 @@ private:
               spdlog::trace("Call {}",
                             std::source_location::current().function_name());
 
-              spdlog::trace("Session address in memory (read packet): {}",
+              spdlog::debug("Session address in memory (read packet): {}",
                             static_cast<void const *>(session.get()));
               auto const remote_endpoint{session->socket().remote_endpoint()};
-              spdlog::info("{} ({}:{}): {}",
-                           packet.header.sender.name.to_string(),
-                           remote_endpoint.address().to_string(),
-                           remote_endpoint.port(), packet.body.to_string());
+              spdlog::debug("{}({}:{}): {}",
+                            packet.header.sender.name.to_string(),
+                            remote_endpoint.address().to_string(),
+                            remote_endpoint.port(), packet.body.to_string());
 
               return handle_packet(session, packet);
             },
@@ -206,7 +206,7 @@ private:
       if (argv[1] == "event") {
         auto &game{_games.at(std::stoull(argv[2]))};
         auto &events_queue{game.pending_events()};
-        if (game.is_ended()) {
+        if (game.ended()) {
           _games.extract(std::stoull(argv[2]));
           return "ended";
         }
@@ -229,7 +229,7 @@ private:
     _publishing_name_to_session.at(to)->write(
         Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::Server, _name},
                   Sb_packet_type::Message, message});
-    spdlog::info("{}.publish->{}: {}", _name, to, message);
+    spdlog::debug("{}.publish->{}: {}", _name, to, message);
   }
 
   void respond(Session_ptr const &session, std::string_view const to,
@@ -238,7 +238,7 @@ private:
     session->write(
         Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::Server, _name},
                   Sb_packet_type::Message, message});
-    spdlog::info("{}.respond->{}: {}", _name, to, message);
+    spdlog::debug("{}.respond->{}: {}", _name, to, message);
   }
 
   auto allocate_game(std::array<Player *, 2> const &players) -> Game &

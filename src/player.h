@@ -2,10 +2,14 @@
 
 #include "random.h"
 #include <cstdint>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
 
 using nlohmann::json;
+
+class Player;
+using Player_ptr = std::shared_ptr<Player>;
 
 class Player {
 public:
