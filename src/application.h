@@ -38,14 +38,14 @@ public:
 
     // The order of two statements below can not be inversed.
     _subscribing_session->write(Sb_packet{
-        Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
-        Sb_packet_type::Login, "Subscribe"});
+        Sb_packet_sender{Sb_packet_sender::Type::client, _player_name},
+        Sb_packet_type::login, "Subscribe"});
 
     spdlog::info(
         "Connected to the server: {}",
         _requesting_session->request<std::string>(Sb_packet{
-            Sb_packet_sender{Sb_packet_sender::Type::Client, _player_name},
-            Sb_packet_type::Login, "Request"}));
+            Sb_packet_sender{Sb_packet_sender::Type::client, _player_name},
+            Sb_packet_type::login, "Request"}));
 
     while (!should_stop()) {
       tick();
@@ -75,9 +75,9 @@ private:
   auto request(std::string_view const req) -> std::string
   {
     return _requesting_session->request<std::string>(
-        Sb_packet{Sb_packet_sender{.type = Sb_packet_sender::Type::Client,
+        Sb_packet{Sb_packet_sender{.type = Sb_packet_sender::Type::client,
                                    .name{_player_name}},
-                  Sb_packet_type::Message, req});
+                  Sb_packet_type::message, req});
   }
 
   [[nodiscard]] auto should_stop() const -> bool

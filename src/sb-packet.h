@@ -65,10 +65,10 @@ private:
 static constexpr auto max_sender_name_length{64};
 struct Sb_packet_sender {
   enum class Type : std::uint8_t {
-    Client,
-    Administrator,
-    Server,
-    Undefined,
+    client,
+    administrator,
+    server,
+    undefined,
   };
 
   Type type;
@@ -76,14 +76,14 @@ struct Sb_packet_sender {
 };
 
 enum class Sb_packet_type : uint8_t {
-  Login,
-  Message,
-  Undefined,
+  login,
+  message,
+  undefined,
 };
 
 struct Sb_packet {
   static constexpr auto protocol_length{4};
-  static constexpr auto max_body_length{256};
+  static constexpr auto max_body_length{1024};
   static constexpr std::array<char, protocol_length> this_protocol_name{
       's', 'b', 'p', '\0'};
 
@@ -93,14 +93,14 @@ struct Sb_packet {
   };
 
   explicit Sb_packet()
-      : header{.sender{.type = Sb_packet_sender::Type::Undefined,
+      : header{.sender{.type = Sb_packet_sender::Type::undefined,
                        .name{"Undefined sender name"}}},
-        type{Sb_packet_type::Undefined}, body{"Undefine body"}
+        type{Sb_packet_type::undefined}, body{"Undefine body"}
   {
   }
 
   Sb_packet(Sb_packet_sender const sender,
-            Sb_packet_type const type = Sb_packet_type::Message,
+            Sb_packet_type const type = Sb_packet_type::message,
             std::string_view const data = "")
       : header{.sender{sender}}, type{type}, body{data}
   {

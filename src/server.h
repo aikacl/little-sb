@@ -130,9 +130,9 @@ private:
     auto const &from{packet.header.sender.name.to_string()};
 
     switch (packet.header.sender.type) {
-    case Sb_packet_sender::Type::Client:
+    case Sb_packet_sender::Type::client:
       switch (packet.type) {
-      case Sb_packet_type::Login:
+      case Sb_packet_type::login:
         // TODO(ShelpAm): add authentication.
         if (packet.body.to_string() == "Subscribe") {
           _publishing_name_to_session.insert({from, session});
@@ -150,17 +150,17 @@ private:
         }
         // Unreachable
         throw std::logic_error{"Unreachable"};
-      case Sb_packet_type::Message:
+      case Sb_packet_type::message:
         respond(session, from,
                 handle_player_message(from, packet.body.to_string()));
         return true;
-      case Sb_packet_type::Undefined:
+      case Sb_packet_type::undefined:
         respond(session, from, "Undefined Sb packet type");
         return true;
       }
-    case Sb_packet_sender::Type::Administrator:
-    case Sb_packet_sender::Type::Server:
-    case Sb_packet_sender::Type::Undefined:
+    case Sb_packet_sender::Type::administrator:
+    case Sb_packet_sender::Type::server:
+    case Sb_packet_sender::Type::undefined:
       return true;
     }
     // Unreachable
@@ -227,8 +227,8 @@ private:
   void publish(std::string const &to, std::string_view const message)
   {
     _publishing_name_to_session.at(to)->write(
-        Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::Server, _name},
-                  Sb_packet_type::Message, message});
+        Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::server, _name},
+                  Sb_packet_type::message, message});
     spdlog::debug("{}.publish->{}: {}", _name, to, message);
   }
 
@@ -236,8 +236,8 @@ private:
                std::string_view const message)
   {
     session->write(
-        Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::Server, _name},
-                  Sb_packet_type::Message, message});
+        Sb_packet{Sb_packet_sender{Sb_packet_sender::Type::server, _name},
+                  Sb_packet_type::message, message});
     spdlog::debug("{}.respond->{}: {}", _name, to, message);
   }
 
