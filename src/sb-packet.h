@@ -22,7 +22,7 @@ struct Sb_packet {
   }
 
   // Header
-  std::string_view protocol{this_protocol_name};
+  std::string protocol{this_protocol_name};
   Sb_packet_sender sender{"Undefined username", "Undefined password"};
   std::string payload{"Undefined body"};
 
