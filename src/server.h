@@ -35,7 +35,7 @@ private:
                              Command const &command) -> bool;
   auto parse_player_message(std::string const &player_name,
                             Command const &command) -> std::string;
-  void publish(std::string const &to, std::string message);
+  void publish(std::string const &to, Command const &command);
   void respond(Session_ptr const &session, std::string_view to,
                std::string message);
   auto allocate_game(std::array<Player *, 2> const &players) -> Game &;

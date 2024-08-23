@@ -5,8 +5,8 @@
 
 Command::Command(std::string name) : _data(json::object())
 {
-  _data.push_back({"name", name});
-  spdlog::debug("{}", _data.dump());
+  _data["name"] = name;
+  spdlog::debug("Creating command from std::string: {}", _data.dump());
   assert(_data.is_object());
 }
 

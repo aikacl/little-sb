@@ -119,7 +119,7 @@ auto Server::handle_player_command(Session_ptr const &session,
   if (command.name() == "Subscribe") {
     _publishing_name_to_session.insert({from, session});
     _publishing_session_to_name.insert({session, from});
-    respond(session, from, "Ok, subscribed");
+    // respond(session, from, "Ok, subscribed");
     return false;
   }
   if (command.name() == "Request") {
@@ -150,8 +150,9 @@ auto Server::parse_player_message(std::string const &player_name,
     auto const game_id{
         allocate_game({&_players.at(player_name), &_players.at(opponent)})
             .id()};
-    publish(opponent,
-            std::format("You received a battle with {}", player_name));
+    Command event{"event"s};
+    event.add_arg(std::format("You received a battle with {}", player_name));
+    publish(opponent, event);
     return std::format("ok {}", game_id);
   }
   if (command.name() == "damage") {
@@ -181,7 +182,10 @@ auto Server::parse_player_message(std::string const &player_name,
   if (command.name() == "say") {
     auto const content{command.get_arg<std::string>(0)};
     for (auto const &[name, _] : _publishing_name_to_session) {
-      publish(name, content);
+      Command broadcast{"broadcast"s};
+      broadcast.add_arg(content);
+      broadcast.set_param("from", player_name);
+      publish(name, broadcast);
     }
     return "ok";
   }
@@ -215,13 +219,13 @@ auto Server::wait_for_publishing_session(std::string const &session_name)
   return _publishing_name_to_session.at(session_name);
 }
 
-void Server::publish(std::string const &to, std::string message)
+void Server::publish(std::string const &to, Command const &command)
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  _publishing_name_to_session.at(to)->write(Sb_packet{
-      Sb_packet_sender{_name, _name}, json(std::move(message)).dump()});
-  spdlog::debug("{}.publish->{}: {}", _name, to, message);
+  _publishing_name_to_session.at(to)->write(
+      Sb_packet{Sb_packet_sender{_name, _name}, command.dump()});
+  spdlog::debug("{}.publish->{}: {}", _name, to, command.dump());
 }
 
 void Server::respond(Session_ptr const &session, std::string_view const to,

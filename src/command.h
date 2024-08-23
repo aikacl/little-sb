@@ -4,6 +4,7 @@
 #include <string>
 
 using nlohmann::json;
+using namespace std::literals;
 
 class Command {
 public:
@@ -17,9 +18,9 @@ public:
   {
     return _data["params"][key].get<T>();
   }
-  template <typename T> void set_param(std::string const &key, T &&value)
+  template <typename T> void set_param(std::string const &key, T value)
   {
-    _data["params"][key] = std::forward(value);
+    _data["params"][key] = std::move(value);
   }
 
   auto args() -> json;

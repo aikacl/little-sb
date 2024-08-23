@@ -10,8 +10,6 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
-using namespace std::literals;
-
 Application::Application(std::string_view const host, std::uint16_t const port,
                          std::string_view const player_name)
     : _subscribing_session{std::make_shared<Session>(connect(host, port))},
@@ -27,7 +25,15 @@ void Application::run()
 
   _subscribing_session->start(
       [](Sb_packet const &packet) {
-        spdlog::info("Server message: {}", packet.payload);
+        Command const command{json::parse(packet.payload)};
+        if (command.name() == "broadcast") {
+          auto const from{command.get_param<std::string>("from")};
+          auto const what{command.get_arg<std::string>(0)};
+          spdlog::info("{} said: {}", from, what);
+        }
+        if (command.name() == "event") {
+          spdlog::info("Event received: {}", command.get_arg<std::string>(0));
+        }
         return true;
       },
       []() {});
