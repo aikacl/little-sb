@@ -1,7 +1,7 @@
 #include "server.h"
 #include "command.h"
-#include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <string_view>
@@ -38,6 +38,16 @@ Server::Server(std::uint16_t const bind_port)
     : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
+  register_command_executor(
+      std::make_unique<Say_server_command_executor>(this));
+  register_command_executor(
+      std::make_unique<Query_event_server_command_executor>(this));
+}
+
+void Server::register_command_executor(
+    std::unique_ptr<Server_command_executor> executor)
+{
+  _server_commands.insert({executor->name(), std::move(executor)});
 }
 
 constexpr auto Server::tick_interval()
@@ -164,30 +174,10 @@ auto Server::parse_player_message(std::string const &player_name,
     }
     return json.dump();
   }
-  if (command.name() == "query-event") {
-    auto const game_id{command.get_arg<std::int64_t>(0)};
-    auto &game{_games.at(game_id)};
-    if (game.ended()) {
-      _games.extract(game_id);
-      return "ended";
-    }
-    auto &events_queue{game.pending_events()};
-    if (events_queue.empty()) {
-      return "no";
-    }
-    auto const event{std::move(events_queue.front())};
-    events_queue.pop();
-    return event;
-  }
-  if (command.name() == "say") {
-    auto const content{command.get_arg<std::string>(0)};
-    for (auto const &[name, _] : _publishing_name_to_session) {
-      Command broadcast{"broadcast"s};
-      broadcast.add_arg(content);
-      broadcast.set_param("from", player_name);
-      publish(name, broadcast);
-    }
-    return "ok";
+  if (_server_commands.contains(command.name())) {
+    return _server_commands.at(command.name())
+        ->execute(player_name, command)
+        .dump();
   }
 
   return std::format("Unrecognized command {}", command.name());
@@ -232,10 +222,11 @@ void Server::respond(Session_ptr const &session, std::string_view const to,
                      std::string message)
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
+  spdlog::debug("@param message {}", message);
 
-  session->write(Sb_packet{Sb_packet_sender{_name, _name},
-                           json(std::move(message)).dump()});
-  spdlog::debug("{}.respond->{}: {}", _name, to, message);
+  auto const dumpped{json(std::move(message)).dump()};
+  session->write(Sb_packet{Sb_packet_sender{_name, _name}, dumpped});
+  spdlog::debug("{}.respond->{}: {}", _name, to, dumpped);
 }
 
 auto Server::allocate_game(std::array<Player *, 2> const &players) -> Game &

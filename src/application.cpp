@@ -124,7 +124,8 @@ void Application::handle_greeting()
   else if (choice.substr(0, 4) == "say ") {
     Command say{"say"s};
     say.add_arg(choice.substr(4));
-    if (request<std::string>(say) != "ok") {
+    if (json::parse(request<std::string>(say)).get<std::string>() !=
+        "ok, from server commands") {
       assert(false); // TODO(shelpam): Improve this; seems possible but when
                      // will it present?
     };
@@ -168,7 +169,9 @@ void Application::poll_events()
   while (true) {
     Command query_event{"query-event"s};
     query_event.add_arg(_game_id);
-    auto const event{request<std::string>(query_event)};
+    auto const requested_json(json::parse(request<std::string>(query_event)));
+    spdlog::debug("Requested json: {}", requested_json.dump());
+    auto const event{requested_json.get<std::string>()};
 
     if (event == "no") {
       break;

@@ -3,7 +3,7 @@
 
 auto main(int argc, char *argv[]) -> int
 {
-  spdlog::set_level(spdlog::level::info);
+  spdlog::set_level(spdlog::level::debug);
 
   try {
     if (argc != 2) {

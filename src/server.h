@@ -12,6 +12,9 @@
 #include <string_view>
 
 class Server {
+  friend class Say_server_command_executor;
+  friend class Query_event_server_command_executor;
+
 public:
   void run();
   void shutdown();
@@ -19,6 +22,8 @@ public:
 
 private:
   explicit Server(std::uint16_t bind_port);
+  void
+  register_command_executor(std::unique_ptr<Server_command_executor> executor);
   [[nodiscard]] static constexpr auto tick_interval();
   void do_accept();
   // Only accepts publishing sessions
@@ -51,6 +56,7 @@ private:
   asio::ip::tcp::acceptor _acceptor;
   std::error_code _ec;
   std::string _name{"Server"};
-
+  std::map<std::string, std::unique_ptr<Server_command_executor>>
+      _server_commands;
   static constexpr std::size_t max_tick_per_second{60};
 };
