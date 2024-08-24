@@ -55,7 +55,7 @@ auto Say_server_command_executor::execute(std::string from,
   for (auto const &[name, _] : server()->_publishing_name_to_session) {
     Command broadcast{"broadcast"s};
     broadcast.add_arg(content);
-    broadcast.set_param("from", std::move(from));
+    broadcast.set_param("from", from);
     server()->publish(name, broadcast);
   }
   return "ok, from server commands";
