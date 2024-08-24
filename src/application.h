@@ -3,8 +3,6 @@
 #include "command.h"
 #include "sb-packet.h"
 #include "session.h"
-#include <string>
-#include <string_view>
 
 class Application {
   enum class State : std::uint8_t {
@@ -22,8 +20,6 @@ public:
 
 private:
   [[nodiscard]] auto should_stop() const -> bool;
-  [[nodiscard]] auto connect(std::string_view host,
-                             std::uint16_t port) -> tcp::socket;
   void write(Session_ptr const &session, Command const &command);
   void tick();
   void handle_greeting();
@@ -34,17 +30,20 @@ private:
   void start_new_game();
 
   template <typename Result_type>
-  auto request(Command const &request) -> Result_type
+  auto request(Command const &command) -> Result_type
   {
-    auto const packet{_requesting_session->request(Sb_packet{
-        Sb_packet_sender{_player_name, _player_name}, request.dump()})};
-    return json::parse(packet.payload).get<Result_type>();
+    Sb_packet in{Sb_packet_sender{_name, _name}, command.dump()};
+    Sb_packet out{_requesting_session->request(std::move(in))};
+    return json::parse(std::move(out.payload)).get<Result_type>();
   }
 
   asio::io_context _io_context;
   Session_ptr _subscribing_session;
   Session_ptr _requesting_session;
   State _state{State::greeting};
-  std::string _player_name;
+  std::string _name;
   std::uint64_t _game_id{};
 };
+
+[[nodiscard]] auto connect(asio::io_context &io_context, std::string_view host,
+                           std::uint16_t port) -> tcp::socket;

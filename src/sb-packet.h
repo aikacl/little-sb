@@ -1,13 +1,9 @@
 #pragma once
 
 #include "user.h"
-#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
-#include <string>
-#include <string_view>
 
 using nlohmann::json;
-
 using Sb_packet_sender = User_info;
 
 // This class should only contains POD (plain old data).

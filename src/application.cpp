@@ -1,20 +1,15 @@
 #include "application.h"
-#include "command.h"
-#include "sb-packet.h"
-#include "session.h"
 #include "split-by.h"
 #include <asio.hpp>
-#include <cassert>
 #include <iostream>
-#include <source_location>
-#include <spdlog/spdlog.h>
-#include <string>
 
 Application::Application(std::string_view const host, std::uint16_t const port,
                          std::string_view const player_name)
-    : _subscribing_session{std::make_shared<Session>(connect(host, port))},
-      _requesting_session{std::make_shared<Session>(connect(host, port))},
-      _player_name{player_name}
+    : _subscribing_session{std::make_shared<Session>(
+          connect(_io_context, host, port))},
+      _requesting_session{
+          std::make_shared<Session>(connect(_io_context, host, port))},
+      _name{player_name}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -61,24 +56,9 @@ void Application::run()
   _requesting_session->stop();
 }
 
-auto Application::connect(std::string_view const host,
-                          std::uint16_t const port) -> tcp::socket
-{
-  spdlog::trace("Call {}", std::source_location::current().function_name());
-
-  tcp::socket socket{_io_context};
-  auto const endpoints{
-      tcp::resolver{_io_context}.resolve(host, std::to_string(port))};
-  std::error_code ec;
-  asio::connect(socket, endpoints, ec);
-  handle_error(ec);
-  return socket;
-}
-
 void Application::write(Session_ptr const &session, Command const &command)
 {
-  session->write(
-      Sb_packet{Sb_packet_sender{_player_name, _player_name}, command.dump()});
+  session->write(Sb_packet{Sb_packet_sender{_name, _name}, command.dump()});
 }
 
 auto Application::should_stop() const -> bool
@@ -128,8 +108,8 @@ void Application::handle_greeting()
         "ok, from server commands") {
       assert(false); // TODO(shelpam): Improve this; seems possible but when
                      // will it present?
-    };
-    // We keep state unchanged.
+    }
+    // Keep state unchanged.
   }
   else {
     spdlog::info("Unknown command '{}'", choice);
@@ -169,9 +149,9 @@ void Application::poll_events()
   while (true) {
     Command query_event{"query-event"s};
     query_event.add_arg(_game_id);
-    auto const requested_json(json::parse(request<std::string>(query_event)));
-    spdlog::debug("Requested json: {}", requested_json.dump());
-    auto const event{requested_json.get<std::string>()};
+    auto event_json_str{request<std::string>(query_event)};
+    spdlog::debug("Requested json: {}", event_json_str);
+    auto const event{json::parse(std::move(event_json_str)).get<std::string>()};
 
     if (event == "no") {
       break;
@@ -195,35 +175,41 @@ void Application::handle_ended()
   spdlog::info("Continue? y/[n]");
   std::string choice;
   std::getline(std::cin, choice);
-  if (choice == "y") {
-    _state = State::starting;
-  }
-  else {
-    _state = State::greeting;
-  }
+  _state = choice == "y" ? State::starting : State::greeting;
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
 void Application::start_new_game()
 {
-  std::vector<std::string> parts;
-
   while (true) {
-    spdlog::info("Players online: {}",
-                 request<std::string>(Command{"list-players"s}));
+    auto const players_list{request<std::string>(Command{"list-players"s})};
+    spdlog::info("Players online: {}", players_list);
     spdlog::info("Who do you want battle with?");
     std::string choice;
     std::getline(std::cin, choice);
     Command battle{"battle"s};
     battle.add_arg(choice);
     auto const response{request<std::string>(battle)};
-    parts = split_by(response);
+    auto const parts{split_by(response)};
     if (parts[0] == "ok") {
+      _game_id = std::stoull(parts[1]);
       break;
     }
     spdlog::warn("{}", response);
   }
+}
 
-  _game_id = std::stoull(parts[1]);
+auto connect(asio::io_context &io_context, std::string_view const host,
+             std::uint16_t const port) -> tcp::socket
+{
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
+  tcp::socket socket{io_context};
+  auto const endpoints{
+      tcp::resolver{io_context}.resolve(host, std::to_string(port))};
+  std::error_code ec;
+  asio::connect(socket, endpoints, ec);
+  handle_error(ec);
+  return socket;
 }

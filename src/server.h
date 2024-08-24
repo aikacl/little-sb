@@ -1,15 +1,14 @@
 #pragma once
 
-#include "command.h"
-#include "game.h"
-#include "sb-packet.h"
-#include "session.h"
+#include "session_fwd.h"
 #include <asio.hpp>
-#include <atomic>
 #include <map>
-#include <spdlog/spdlog.h>
-#include <string>
-#include <string_view>
+
+class Game;
+class Command;
+class Player;
+struct Sb_packet;
+class Server_command_executor;
 
 class Server {
   friend class Say_server_command_executor;

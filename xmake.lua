@@ -29,5 +29,5 @@ target("little-sb-client")
 
 target("little-sb-server")
     set_kind("binary")
-    add_files("src/little-sb-server.cpp")
+    add_files("src/little-sb-server.cpp", "src/server-command-executor.cpp")
     add_deps("lib")

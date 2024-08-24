@@ -1,10 +1,10 @@
 #include "server.h"
 #include "command.h"
-#include <cstdint>
-#include <memory>
-#include <spdlog/spdlog.h>
-#include <string>
-#include <string_view>
+#include "game.h"
+#include "player.h"
+#include "random.h"
+#include "server-command-executor.h"
+#include "session.h"
 
 void Server::run()
 {

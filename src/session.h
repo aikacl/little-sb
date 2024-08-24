@@ -2,19 +2,11 @@
 
 #include "handle-error.h"
 #include "sb-packet.h"
+#include "session_fwd.h"
 #include <asio.hpp>
-#include <functional>
-#include <memory>
-#include <print>
 #include <queue>
-#include <source_location>
-#include <spdlog/spdlog.h>
-#include <string_view>
 
 using asio::ip::tcp;
-
-class Session;
-using Session_ptr = std::shared_ptr<Session>;
 
 class Session : public std::enable_shared_from_this<Session> {
   static constexpr std::size_t buffer_size{1024};
@@ -44,11 +36,11 @@ public:
     _should_stop = true;
   }
 
-  void write(Sb_packet const &packet)
+  void write(Sb_packet packet)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    _packets_queue.push(packet);
+    _packets_queue.push(std::move(packet));
     write();
   }
 
@@ -66,11 +58,11 @@ public:
     return packet;
   }
 
-  auto request(Sb_packet const &packet) -> Sb_packet
+  auto request(Sb_packet packet) -> Sb_packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    write(packet);
+    write(std::move(packet));
     return read();
   }
 

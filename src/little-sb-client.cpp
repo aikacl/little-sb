@@ -1,4 +1,5 @@
 #include "application.h"
+#include <print>
 #include <spdlog/spdlog.h>
 
 auto main(int argc, char *argv[]) -> int
