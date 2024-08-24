@@ -31,7 +31,12 @@ auto Command::dump() const -> std::string
 {
   return _data.dump();
 }
-auto Command::args() -> json
+auto Command::args() -> json &
+{
+  return _data["args"];
+}
+
+auto Command::args() const -> json const &
 {
   return _data["args"];
 }

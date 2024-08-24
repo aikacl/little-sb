@@ -38,6 +38,7 @@ Server::Server(std::uint16_t const bind_port)
     : _acceptor{_io_context, tcp::endpoint{tcp::v6(), bind_port}}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
+
   register_command_executor(
       std::make_unique<Say_server_command_executor>(this));
   register_command_executor(

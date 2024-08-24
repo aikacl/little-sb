@@ -23,7 +23,8 @@ public:
     _data["params"][key] = std::move(value);
   }
 
-  auto args() -> json;
+  auto args() -> json &;
+  [[nodiscard]] auto args() const -> json const &;
   template <typename T>
   [[nodiscard]] auto get_arg(std::size_t const index) const -> T
   {
