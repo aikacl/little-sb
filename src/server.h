@@ -13,6 +13,7 @@ class Server_command_executor;
 class Server {
   friend class Say_server_command_executor;
   friend class Query_event_server_command_executor;
+  friend class Fuck_server_command_executor;
 
 public:
   void run();

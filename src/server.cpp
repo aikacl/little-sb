@@ -43,6 +43,8 @@ Server::Server(std::uint16_t const bind_port)
       std::make_unique<Say_server_command_executor>(this));
   register_command_executor(
       std::make_unique<Query_event_server_command_executor>(this));
+  register_command_executor(
+      std::make_unique<Fuck_server_command_executor>(this));
 }
 
 void Server::register_command_executor(

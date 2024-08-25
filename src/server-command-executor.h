@@ -31,3 +31,10 @@ public:
   auto execute(std::string from, Command const &command) -> json final;
   constexpr auto name() -> std::string final;
 };
+
+class Fuck_server_command_executor : public Server_command_executor {
+public:
+  Fuck_server_command_executor(Server *server);
+  auto execute(std::string from, Command const &command) -> json final;
+  constexpr auto name() -> std::string final;
+};

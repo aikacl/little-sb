@@ -62,3 +62,25 @@ constexpr auto Query_event_server_command_executor::name() -> std::string
 {
   return "query-event";
 }
+
+Fuck_server_command_executor::Fuck_server_command_executor(Server *server)
+    : Server_command_executor{server}
+{
+}
+
+auto Fuck_server_command_executor::execute(std::string from,
+                                           Command const &command) -> json
+{
+  auto s{server()};
+  Command new_command(command.name());
+  new_command.set_param("fucker", from);
+  for (auto const &[name, _] : s->_publishing_name_to_session) {
+    s->publish(name, new_command);
+  }
+  return "ok";
+}
+
+constexpr auto Fuck_server_command_executor::name() -> std::string
+{
+  return "fuck";
+}
