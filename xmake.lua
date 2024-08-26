@@ -7,26 +7,28 @@ end
 
 set_languages("cxxlatest")
 
+add_rules("mode.debug", "mode.release")
+add_includedirs("src", "third-party/glad/include")
+add_requires("asio", "glfw", "nlohmann_json", "spdlog")
+add_requires("imgui", { configs = { glfw = true, opengl3 = true, } })
+
 requirements = {
   "asio",
   "glfw",
+  "imgui",
   "nlohmann_json",
   "nuklear",
   "spdlog",
 }
 
-add_rules("mode.debug", "mode.release")
-add_includedirs("src", "include")
-for _, package in pairs(requirements) do
-    add_requires(package)
-    add_packages(package)
-end
+add_packages(requirements)
+
 
 mingw_special_settings()
 
 target("lib")
     set_kind("static")
-    add_files("src/command.cpp")
+    add_files("src/command.cpp", "third-party/glad/src/gl.c")
     add_defines("JSON_USE_IMPLICIT_CONVERSIONS=0")
 
 target("little-sb-client")

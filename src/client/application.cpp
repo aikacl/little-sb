@@ -18,9 +18,10 @@ void Application::run()
   Command login{"login"s};
   spdlog::info("Connected to the server: {}", request<std::string>(login));
 
-  while (!should_stop()) {
+  while (!should_stop() && !_window.should_close()) {
     _io_context.poll();
-    tick(); // TODO(shelpam): this shouldn't be blocking.
+    // tick(); // TODO(shelpam): this shouldn't be blocking.
+    _window.poll_events();
   }
 
   _session->stop();

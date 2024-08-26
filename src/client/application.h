@@ -3,6 +3,7 @@
 #include "command.h"
 #include "packet.h"
 #include "session.h"
+#include "window.h"
 
 class Application {
   enum class State : std::uint8_t {
@@ -42,6 +43,7 @@ private:
   State _state{State::greeting};
   std::string _name;
   std::uint64_t _game_id{};
+  Window _window;
 };
 
 [[nodiscard]] auto connect(asio::io_context &io_context, std::string_view host,
