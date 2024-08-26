@@ -1,20 +1,14 @@
 #include "application.h"
 #include "split-by.h"
 #include <asio.hpp>
-#include <imgui.h>
 #include <iostream>
 
 Application::Application(std::string_view const host, std::uint16_t const port,
-                         std::string_view const player_name)
-    : _subscribing_session{std::make_shared<Session>(
-          connect(_io_context, host, port))},
-      _requesting_session{
-          std::make_shared<Session>(connect(_io_context, host, port))},
-      _name{player_name}
+                         std::string player_name)
+    : _session{std::make_shared<Session>(connect(_io_context, host, port))},
+      _name{std::move(player_name)}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
-
-  ImGui::ShowDemoWindow();
 }
 
 void Application::run()
@@ -29,8 +23,7 @@ void Application::run()
     tick(); // TODO(shelpam): this shouldn't be blocking.
   }
 
-  _subscribing_session->stop();
-  _requesting_session->stop();
+  _session->stop();
 }
 
 void Application::write(Session_ptr const &session, Command const &command)

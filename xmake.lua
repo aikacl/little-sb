@@ -10,13 +10,13 @@ set_languages("cxxlatest")
 requirements = {
   "asio",
   "glfw",
-  "imgui",
   "nlohmann_json",
+  "nuklear",
   "spdlog",
 }
 
 add_rules("mode.debug", "mode.release")
-add_includedirs("src/")
+add_includedirs("src", "include")
 for _, package in pairs(requirements) do
     add_requires(package)
     add_packages(package)

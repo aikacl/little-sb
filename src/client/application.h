@@ -15,7 +15,7 @@ class Application {
 
 public:
   Application(std::string_view host, std::uint16_t port,
-              std::string_view player_name);
+              std::string player_name);
   void run();
 
 private:
@@ -33,13 +33,12 @@ private:
   auto request(Command const &command) -> Result_type
   {
     Packet in{Packet_sender{_name, _name}, command.dump()};
-    Packet out{_requesting_session->request(std::move(in))};
+    Packet out{_session->request(std::move(in))};
     return json::parse(std::move(out.payload)).get<Result_type>();
   }
 
   asio::io_context _io_context;
-  Session_ptr _subscribing_session;
-  Session_ptr _requesting_session;
+  Session_ptr _session;
   State _state{State::greeting};
   std::string _name;
   std::uint64_t _game_id{};
