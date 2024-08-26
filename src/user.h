@@ -1,7 +1,6 @@
 #pragma once
 
-#include <nlohmann/detail/macro_scope.hpp>
-#include <nlohmann/json.hpp>
+#include "json.h"
 #include <string>
 #include <utility>
 

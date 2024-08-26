@@ -14,14 +14,14 @@ auto main(int /*argc*/, char * /*argv*/[]) -> int
   std::signal(SIGINT, signal_handler);
   spdlog::set_level(spdlog::level::trace); // Set for debugging
 
-#ifndef DEBUG
+#ifdef NDEBUG
   // Disable try-catch in DEBUG mode to allow the debugger to catch and display
   // the original exception location, rather than catching it here and losing
   // the call stack information.
   try {
 #endif
     Server::instance(1438).run();
-#ifndef DEBUG
+#ifdef NDEBUG
   }
   catch (std::exception &e) {
     spdlog::critical("Exception: {}", e.what());

@@ -4,7 +4,6 @@
 #include "packet.h"
 #include "session_fwd.h"
 #include <asio.hpp>
-#include <queue>
 
 using asio::ip::tcp;
 
@@ -40,8 +39,10 @@ public:
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
-    _packets_queue.push(std::move(packet));
-    write();
+    std::error_code ec;
+    asio::write(_socket, asio::buffer(json(std::move(packet)).dump()), ec);
+    spdlog::debug("Sent packet: {}", packet);
+    handle_error(ec);
   }
 
   auto read() -> Packet
@@ -125,17 +126,6 @@ private:
           }
         });
   }
-  void write()
-  {
-    while (!_packets_queue.empty()) {
-      auto const &packet{_packets_queue.front()};
-      std::error_code ec;
-      asio::write(_socket, asio::buffer(json(packet).dump()), ec);
-      spdlog::debug("Sent packet: {}", packet);
-      handle_error(ec);
-      _packets_queue.pop();
-    }
-  }
 
   tcp::socket _socket;
   // Two statement below are for asynchronoized operations
@@ -143,6 +133,4 @@ private:
   // In asynchronoized environment, this as may be read in future, should be
   // placed in member field to keep its lifetime
   std::array<char, buffer_size> _buffer{};
-  // This is for synchronoized operations
-  std::queue<Packet> _packets_queue;
 };

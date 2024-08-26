@@ -18,27 +18,6 @@ void Application::run()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  // TODO(ShelpAm): move this to pollevents.
-  // _subscribing_session->start(
-  //     [](Packet const &packet) {
-  //       Command const command{json::parse(packet.payload)};
-  //       if (command.name() == "broadcast") {
-  //         auto const from{command.get_param<std::string>("from")};
-  //         auto const what{command.get_arg<std::string>(0)};
-  //         spdlog::info("{} said: {}", from, what);
-  //       }
-  //       if (command.name() == "event") {
-  //         spdlog::info("Event received: {}",
-  //         command.get_arg<std::string>(0));
-  //       }
-  //       if (command.name() == "fuck") {
-  //         spdlog::info("Event received: You are fucked by {}",
-  //                      command.get_param<std::string>("fucker"));
-  //       }
-  //       return true;
-  //     },
-  //     []() {});
-
   Command login{"login"s};
   spdlog::info("Connected to the server: {}", request<std::string>(login));
 
@@ -73,7 +52,22 @@ void Application::poll_events()
       break;
     }
 
-    spdlog::info("You have received an event: {}", event);
+    Command const command{json::parse(event)};
+    if (command.name() == "broadcast") {
+      auto const from{command.get_param<std::string>("from")};
+      auto const what{command.get_arg<std::string>(0)};
+      spdlog::info("{} said: {}", from, what);
+    }
+    else if (command.name() == "event") {
+      spdlog::info("Event received: {}", command.get_arg<std::string>(0));
+    }
+    else if (command.name() == "fuck") {
+      spdlog::info("Event received: You are fucked by {}",
+                   command.get_param<std::string>("fucker"));
+    }
+    else {
+      spdlog::warn("Unknown event: {}", event);
+    }
   }
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());

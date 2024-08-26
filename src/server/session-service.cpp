@@ -4,8 +4,6 @@
 #include "packet.h"
 #include "server-command-executor.h"
 #include "server.h"
-#include <expected>
-#include <source_location>
 
 Session_service::Session_service(Server *server, std::uint16_t const port,
                                  std::string name)
@@ -65,7 +63,7 @@ auto Session_service::on_reading_packet(Packet packet) -> Packet
 auto Session_service::handle_player_command(std::string const &player,
                                             Command command) -> std::string
 {
-  spdlog::trace("Call {}", std::source_location::current().function_name());
+  spdlog::trace("Handling player's command");
 
   // TODO(ShelpAm): add authentication.
   if (command.name() == "login") {
@@ -74,18 +72,20 @@ auto Session_service::handle_player_command(std::string const &player,
     return "Ok, you have logged in.";
   }
   if (command.name() == "battle") {
-    auto const &opponent{command.get_arg<std::string>(0)};
-    if (opponent == player) {
+    auto const &target{command.get_arg<std::string>(0)};
+    if (target == player) {
       return "Can not select yourself as a component.";
     }
-    if (!_server->_players.contains(opponent)) {
+    if (!_server->_players.contains(target)) {
       return "Player not found.";
     }
     auto const game_id{_server
                            ->allocate_game({&_server->_players.at(player),
-                                            &_server->_players.at(opponent)})
+                                            &_server->_players.at(target)})
                            .id()};
-    push_event(opponent, std::format("You received a battle with {}", player));
+    Command cmd{"event"s};
+    cmd.add_arg(std::format("You received a battle with {}", player));
+    push_event(target, cmd.dump());
     return std::format("ok {}", game_id);
   }
   if (command.name() == "damage") {

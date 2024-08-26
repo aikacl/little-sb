@@ -1,7 +1,7 @@
 #pragma once
 
 #include "packet.h"
-#include "session-service.h"
+#include "server/session-service.h"
 #include <asio.hpp>
 #include <map>
 

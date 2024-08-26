@@ -10,10 +10,7 @@ set_languages("cxxlatest")
 add_rules("mode.debug", "mode.release")
 add_requires("asio", "nlohmann_json", "spdlog")
 add_packages("asio", "nlohmann_json", "spdlog")
-
-if is_mode("debug") then
-    add_defines("DEBUG")
-end
+add_includedirs("src/")
 
 mingw_special_settings()
 
@@ -24,11 +21,10 @@ target("lib")
 
 target("little-sb-client")
     set_kind("binary")
-    add_files("src/little-sb-client.cpp", "src/application.cpp")
+    add_files("src/client/little-sb-client.cpp", "src/client/*.cpp")
     add_deps("lib")
 
 target("little-sb-server")
     set_kind("binary")
-    add_files("src/little-sb-server.cpp", "src/server-command-executor.cpp",
-              "src/server.cpp", "src/session-service.cpp", "src/session-repository.cpp")
+    add_files("src/server/*.cpp")
     add_deps("lib")

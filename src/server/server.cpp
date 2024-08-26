@@ -1,7 +1,7 @@
-#include "server.h"
-#include "game.h"
+#include "server/server.h"
 #include "player.h"
-#include "server-command-executor.h"
+#include "server/game.h"
+#include "server/server-command-executor.h"
 #include <source_location>
 #include <spdlog/spdlog.h>
 
@@ -10,6 +10,7 @@ auto Server::instance(std::uint16_t const bind_port) -> Server &
   static Server the_instance{bind_port};
   return the_instance;
 }
+
 void Server::run()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
