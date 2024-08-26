@@ -1,7 +1,7 @@
 #pragma once
 
 #include "command.h"
-#include "sb-packet.h"
+#include "packet.h"
 #include "session.h"
 
 class Application {
@@ -21,19 +21,19 @@ public:
 private:
   [[nodiscard]] auto should_stop() const -> bool;
   void write(Session_ptr const &session, Command const &command);
+  void poll_events();
   void tick();
   void handle_greeting();
   void handle_starting();
   void handle_running();
-  void poll_events();
   void handle_ended();
   void start_new_game();
 
   template <typename Result_type>
   auto request(Command const &command) -> Result_type
   {
-    Sb_packet in{Sb_packet_sender{_name, _name}, command.dump()};
-    Sb_packet out{_requesting_session->request(std::move(in))};
+    Packet in{Packet_sender{_name, _name}, command.dump()};
+    Packet out{_requesting_session->request(std::move(in))};
     return json::parse(std::move(out.payload)).get<Result_type>();
   }
 

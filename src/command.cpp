@@ -7,7 +7,7 @@ Command::Command(std::string name) : _data(json::object())
   spdlog::debug("Creating command from std::string: {}", _data.dump());
 }
 
-Command::Command(json &&data) : _data(std::move(data))
+Command::Command(json data) : _data(std::move(data))
 {
   spdlog::debug("Creating command from json: {}", _data.dump());
 }

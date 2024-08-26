@@ -4,29 +4,29 @@
 #include <spdlog/spdlog.h>
 
 using nlohmann::json;
-using Sb_packet_sender = User_info;
+using Packet_sender = User_info;
 
 // This class should only contains POD (plain old data).
-struct Sb_packet {
+struct Packet {
   static constexpr std::string_view this_protocol_name{"sbp"};
 
-  Sb_packet() = default;
+  Packet() = default;
 
-  Sb_packet(Sb_packet_sender sender, std::string payload = "")
+  Packet(Packet_sender sender, std::string payload = "")
       : sender{std::move(sender)}, payload{std::move(payload)}
   {
   }
 
   // Header
   std::string protocol{this_protocol_name};
-  Sb_packet_sender sender{"Undefined username", "Undefined password"};
+  Packet_sender sender{"Undefined username", "Undefined password"};
   std::string payload{"Undefined body"};
 
-  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Sb_packet, protocol, sender, payload)
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Packet, protocol, sender, payload)
 };
 
-template <> struct fmt::formatter<Sb_packet> : fmt::formatter<std::string> {
-  static auto format(Sb_packet const &packet,
+template <> struct fmt::formatter<Packet> : fmt::formatter<std::string> {
+  static auto format(Packet const &packet,
                      format_context &ctx) -> decltype(ctx.out())
   {
     return fmt::format_to(ctx.out(), "protocol={},sender={},payload={}.",

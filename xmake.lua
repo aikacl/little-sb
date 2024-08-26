@@ -19,15 +19,16 @@ mingw_special_settings()
 
 target("lib")
     set_kind("static")
-    add_files("src/application.cpp", "src/command.cpp", "src/server.cpp")
+    add_files("src/command.cpp")
     add_defines("JSON_USE_IMPLICIT_CONVERSIONS=0")
 
 target("little-sb-client")
     set_kind("binary")
-    add_files("src/little-sb-client.cpp")
+    add_files("src/little-sb-client.cpp", "src/application.cpp")
     add_deps("lib")
 
 target("little-sb-server")
     set_kind("binary")
-    add_files("src/little-sb-server.cpp", "src/server-command-executor.cpp")
+    add_files("src/little-sb-server.cpp", "src/server-command-executor.cpp",
+              "src/server.cpp", "src/session-service.cpp", "src/session-repository.cpp")
     add_deps("lib")

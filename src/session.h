@@ -1,7 +1,7 @@
 #pragma once
 
 #include "handle-error.h"
-#include "sb-packet.h"
+#include "packet.h"
 #include "session_fwd.h"
 #include <asio.hpp>
 #include <queue>
@@ -22,7 +22,7 @@ public:
   }
 
   // This also extends its lifetime when mangaged by std::shared_ptr
-  void start(std::function<bool(Sb_packet const &)> on_reading_packet,
+  void start(std::function<Packet(Packet)> on_reading_packet,
              std::function<void()> post_session_end)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
@@ -36,7 +36,7 @@ public:
     _should_stop = true;
   }
 
-  void write(Sb_packet packet)
+  void write(Packet packet)
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
@@ -44,7 +44,7 @@ public:
     write();
   }
 
-  auto read() -> Sb_packet
+  auto read() -> Packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
@@ -53,12 +53,12 @@ public:
     auto const read_length{_socket.read_some(asio::buffer(buffer), ec)};
     handle_error(ec);
     auto const packet{json::parse(std::string_view{buffer.data(), read_length})
-                          .get<Sb_packet>()};
+                          .get<Packet>()};
     spdlog::debug("Read packet: {}", packet);
     return packet;
   }
 
-  auto request(Sb_packet packet) -> Sb_packet
+  auto request(Packet packet) -> Packet
   {
     spdlog::trace("Call {}", std::source_location::current().function_name());
 
@@ -67,7 +67,7 @@ public:
   }
 
 private:
-  void do_async_read(std::function<bool(Sb_packet const &)> &&on_reading_packet,
+  void do_async_read(std::function<Packet(Packet)> &&on_reading_packet,
                      std::function<void()> &&post_session_end)
   {
     spdlog::trace("Call {}, Scheduling reading packet",
@@ -79,13 +79,14 @@ private:
         [self{shared_from_this()},
          on_reading_packet{std::move(on_reading_packet)},
          post_session_end{std::move(post_session_end)}](
-            std::error_code const ec, std::size_t const read_length) mutable {
+            std::error_code const ec, std::size_t const length) mutable {
           spdlog::trace("Call {}",
                         std::source_location::current().function_name());
 
           spdlog::trace("Session use count: {}", self.use_count());
           spdlog::trace("Session address in memory (read packet): {}",
                         static_cast<void const *>(self.get()));
+
           // spdlog::debug("Session reads new data, ec: {}", ec.message());
           if (ec == asio::error::eof) {
             post_session_end();
@@ -101,14 +102,14 @@ private:
             return;
           }
 
-          auto const packet{
-              json::parse(std::string_view{self->_buffer.data(), read_length})
-                  .get<Sb_packet>()};
-          spdlog::debug("Read packet: {}", packet);
+          std::string_view const packet_view{self->_buffer.data(), length};
+          auto const packet{json::parse(packet_view).get<Packet>()};
+          spdlog::debug("Read packet: {}", packet_view);
 
           // Same as above
           try {
-            if (on_reading_packet(packet) && !self->_should_stop) {
+            self->write(on_reading_packet(std::move(packet)));
+            if (!self->_should_stop) {
               self->do_async_read(std::move(on_reading_packet),
                                   std::move(post_session_end));
             }
@@ -126,8 +127,6 @@ private:
   }
   void write()
   {
-    spdlog::trace("Call {}", std::source_location::current().function_name());
-
     while (!_packets_queue.empty()) {
       auto const &packet{_packets_queue.front()};
       std::error_code ec;
@@ -145,5 +144,5 @@ private:
   // placed in member field to keep its lifetime
   std::array<char, buffer_size> _buffer{};
   // This is for synchronoized operations
-  std::queue<Sb_packet> _packets_queue;
+  std::queue<Packet> _packets_queue;
 };

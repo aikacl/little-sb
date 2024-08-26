@@ -7,7 +7,7 @@ using namespace std::literals;
 class Command {
 public:
   explicit Command(std::string name);
-  explicit Command(json &&data);
+  explicit Command(json data);
 
   [[nodiscard]] auto name() const -> std::string;
   void name(std::string name);

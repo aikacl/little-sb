@@ -17,6 +17,11 @@ public:
     return _username;
   }
 
+  [[nodiscard]] auto password() const -> std::string const &
+  {
+    return _password;
+  }
+
 private:
   std::string _username;
   std::string _password;
