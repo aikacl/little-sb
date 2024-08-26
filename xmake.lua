@@ -8,8 +8,8 @@ end
 set_languages("cxxlatest")
 
 add_rules("mode.debug", "mode.release")
-add_requires("asio", "nlohmann_json", "spdlog")
-add_packages("asio", "nlohmann_json", "spdlog")
+add_requires("asio", "imgui", "nlohmann_json", "spdlog")
+add_packages("asio", "imgui", "nlohmann_json", "spdlog")
 add_includedirs("src/")
 
 mingw_special_settings()
