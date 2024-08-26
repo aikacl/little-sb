@@ -1,6 +1,7 @@
 #include "application.h"
 #include "split-by.h"
 #include <asio.hpp>
+#include <imgui.h>
 #include <iostream>
 
 Application::Application(std::string_view const host, std::uint16_t const port,
@@ -12,6 +13,8 @@ Application::Application(std::string_view const host, std::uint16_t const port,
       _name{player_name}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
+
+  ImGui::ShowDemoWindow();
 }
 
 void Application::run()

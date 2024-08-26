@@ -7,10 +7,20 @@ end
 
 set_languages("cxxlatest")
 
+requirements = {
+  "asio",
+  "glfw",
+  "imgui",
+  "nlohmann_json",
+  "spdlog",
+}
+
 add_rules("mode.debug", "mode.release")
-add_requires("asio", "imgui", "nlohmann_json", "spdlog")
-add_packages("asio", "imgui", "nlohmann_json", "spdlog")
 add_includedirs("src/")
+for _, package in pairs(requirements) do
+    add_requires(package)
+    add_packages(package)
+end
 
 mingw_special_settings()
 
