@@ -13,8 +13,6 @@ add_requires("asio", "glfw", "nlohmann_json", "spdlog")
 add_requires("imgui", { configs = { glfw = true, opengl3 = true, } })
 mingw_special_settings()
 
-add_cxflags("-static")
-
 target("lib")
     set_kind("static")
     add_files("src/*.cpp", "third-party/glad/src/gl.c")
