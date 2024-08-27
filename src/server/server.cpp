@@ -1,6 +1,6 @@
 #include "server/server.h"
+#include "game.h"
 #include "player.h"
-#include "server/game.h"
 #include "server/server-command-executor.h"
 #include <source_location>
 #include <spdlog/spdlog.h>
@@ -17,7 +17,6 @@ void Server::run()
 
   spdlog::info("Server started. Accepting connections...");
   _session_service.start();
-
   run_main_game_loop();
 }
 
@@ -26,7 +25,6 @@ void Server::shutdown()
   spdlog::info("Server shutting down...");
 
   _session_service.stop();
-
   _main_game_loop_should_stop = true;
 }
 
@@ -65,10 +63,11 @@ void Server::remove_player(std::string const &player_name)
   _players.extract(player_name);
 }
 
-auto Server::allocate_game(std::array<Player *, 2> const &players) -> Game &
+auto Server::allocate_game(std::array<Player *, 2> players) -> Game &
 {
   auto const id{_games.empty() ? std::uint64_t{} : _games.rbegin()->first + 1};
-  return _games.insert({id, Game{id, players}}).first->second;
+  return _games.insert({id, Game{id, players, &_session_service}})
+      .first->second;
 }
 
 void Server::run_main_game_loop()

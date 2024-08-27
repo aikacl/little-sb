@@ -19,13 +19,11 @@ auto Say_server_command_executor::execute(std::string from,
                                           Command const &command) -> json
 {
   auto const content{command.get_arg<std::string>(0)};
-  for (auto const &[name, _] : server()->_players) {
-    Command broadcast{"broadcast"s};
-    broadcast.add_arg(content);
-    broadcast.set_param("from", from);
-    server()->_session_service.push_event(name, broadcast.dump());
-  }
-  return "ok, from server commands";
+  Event broadcast{"broadcast"s};
+  broadcast.set_param("from", std::move(from));
+  broadcast.add_arg(content);
+  server()->_session_service.push_event_all(broadcast);
+  return "ok";
 }
 Say_server_command_executor::Say_server_command_executor(Server *server)
     : Server_command_executor{server}
@@ -74,7 +72,7 @@ auto Fuck_server_command_executor::execute(std::string from,
   Command new_command(command.name());
   new_command.set_param("fucker", from);
   for (auto const &[name, _] : server()->_players) {
-    server()->_session_service.push_event(name, new_command.dump());
+    server()->_session_service.push_event(name, new_command);
   }
   return "ok";
 }

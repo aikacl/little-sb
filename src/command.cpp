@@ -1,10 +1,16 @@
 #include "command.h"
 #include <spdlog/spdlog.h>
 
+Command::Command(char const *name) : _data(json::object())
+{
+  spdlog::debug("Creating command from std::string: {}", _data.dump());
+  _data["name"] = name;
+}
+
 Command::Command(std::string name) : _data(json::object())
 {
-  _data["name"] = name;
   spdlog::debug("Creating command from std::string: {}", _data.dump());
+  _data["name"] = name;
 }
 
 Command::Command(json data) : _data(std::move(data))

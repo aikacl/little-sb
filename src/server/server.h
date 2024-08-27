@@ -29,7 +29,7 @@ private:
   void
   register_command_executor(std::unique_ptr<Server_command_executor> executor);
   void remove_player(std::string const &player_name);
-  auto allocate_game(std::array<Player *, 2> const &players) -> Game &;
+  auto allocate_game(std::array<Player *, 2> players) -> Game &;
   void run_main_game_loop();
   auto verify_userinfo(Packet_sender const &user) const -> bool;
 

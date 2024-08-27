@@ -11,32 +11,25 @@ add_rules("mode.debug", "mode.release")
 add_includedirs("src", "third-party/glad/include")
 add_requires("asio", "glfw", "nlohmann_json", "spdlog")
 add_requires("imgui", { configs = { glfw = true, opengl3 = true, } })
-
-requirements = {
-  "asio",
-  "glfw",
-  "imgui",
-  "nlohmann_json",
-  "nuklear",
-  "spdlog",
-}
-
-add_packages(requirements)
-
-
 mingw_special_settings()
+
+add_cxflags("-static")
 
 target("lib")
     set_kind("static")
-    add_files("src/command.cpp", "third-party/glad/src/gl.c")
+    add_files("src/*.cpp", "third-party/glad/src/gl.c")
     add_defines("JSON_USE_IMPLICIT_CONVERSIONS=0")
+    add_packages("asio", "nlohmann_json", "spdlog")
 
 target("little-sb-client")
     set_kind("binary")
     add_files("src/client/*.cpp")
     add_deps("lib")
+    add_packages("asio", "glfw", "imgui", "nlohmann_json", "spdlog")
+
 
 target("little-sb-server")
     set_kind("binary")
     add_files("src/server/*.cpp")
     add_deps("lib")
+    add_packages("asio", "nlohmann_json", "spdlog")

@@ -6,6 +6,7 @@ using namespace std::literals;
 
 class Command {
 public:
+  explicit Command(char const *name);
   explicit Command(std::string name);
   explicit Command(json data);
 

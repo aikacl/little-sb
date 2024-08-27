@@ -12,7 +12,7 @@ auto main(int /*argc*/, char * /*argv*/[]) -> int
 {
   // Signal handler for SIGINT
   std::signal(SIGINT, signal_handler);
-  spdlog::set_level(spdlog::level::trace); // Set for debugging
+  spdlog::set_level(spdlog::level::info); // Set for debugging
 
 #ifdef NDEBUG
   // Disable try-catch in DEBUG mode to allow the debugger to catch and display

@@ -1,12 +1,17 @@
 #include "application.h"
-#include "split-by.h"
+#include "imgui.h"
+#include "player.h"
+#include "server/session-service.h"
 #include <asio.hpp>
-#include <iostream>
+#include <map>
+#include <utility>
 
 Application::Application(std::string_view const host, std::uint16_t const port,
-                         std::string player_name)
+                         std::string name)
     : _session{std::make_shared<Session>(connect(_io_context, host, port))},
-      _name{std::move(player_name)}
+      _name{std::move(name)},
+      _you{json::parse(request<std::string>(Command{"query-player"s}))
+               .get<Player>()}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -15,13 +20,8 @@ void Application::run()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  Command login{"login"s};
-  spdlog::info("Connected to the server: {}", request<std::string>(login));
-
   while (!should_stop() && !_window.should_close()) {
-    _io_context.poll();
-    // tick(); // TODO(shelpam): this shouldn't be blocking.
-    _window.poll_events();
+    tick(); // TODO(shelpam): this shouldn't be blocking.
   }
 
   _session->stop();
@@ -37,45 +37,81 @@ auto Application::should_stop() const -> bool
   return _state == State::should_stop;
 }
 
-void Application::poll_events()
+void Application::tick()
 {
-  spdlog::trace("Call {}", std::source_location::current().function_name());
+  spdlog::trace("Entering {}", std::source_location::current().function_name());
 
-  while (true) {
-    Command cmd{"event"s};
-    auto const event{request<std::string>(cmd)};
-
-    if (event == "") {
-      break;
-    }
-
-    Command const command{json::parse(event)};
-    if (command.name() == "broadcast") {
-      auto const from{command.get_param<std::string>("from")};
-      auto const what{command.get_arg<std::string>(0)};
-      spdlog::info("{} said: {}", from, what);
-    }
-    else if (command.name() == "event") {
-      spdlog::info("Event received: {}", command.get_arg<std::string>(0));
-    }
-    else if (command.name() == "fuck") {
-      spdlog::info("Event received: You are fucked by {}",
-                   command.get_param<std::string>("fucker"));
-    }
-    else {
-      spdlog::warn("Unknown event: {}", event);
-    }
-  }
+  poll_events();
+  update();
+  render();
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
-void Application::tick()
+void Application::poll_events()
 {
-  spdlog::trace("Entering {}", std::source_location::current().function_name());
-  constexpr std::chrono::milliseconds waiting{300};
-  std::this_thread::sleep_for(waiting);
-  poll_events();
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
+  _io_context.poll();
+  _window.poll_events();
+
+  spdlog::trace("Leaving {}", std::source_location::current().function_name());
+}
+
+void Application::update()
+{
+  using Event = Command;
+  while (true) {
+    Event event{json::parse(request<std::string>(Command{"query-event"}))};
+
+    if (event.name() == "none") {
+      break;
+    }
+
+    if (event.name() == "broadcast") {
+      auto const from{event.get_param<std::string>("from")};
+      auto const what{event.get_arg<std::string>(0)};
+      spdlog::info("{} said: {}", from, what);
+      add_to_show(std::format("{} said: {}", from, what));
+    }
+    else if (event.name() == "battle") {
+      add_to_show(std::format("{} called for a fight with you.",
+                              event.get_param<std::string>("from")));
+    }
+    else if (event.name() == "fuck") {
+      add_to_show(std::format("You are fucked by {}",
+                              event.get_param<std::string>("fucker")));
+    }
+    else if (event.name() == "health-drop") {
+      auto const who{event.get_param<std::string>("player")};
+      auto const drop{event.get_param<int>("drop")};
+      add_to_show(std::format("{} has dropped {} health", who, drop));
+      if (who == _you.name()) {
+        _you.take_damage(drop);
+      }
+    }
+    else if (event.name() == "game-end") {
+      add_to_show("Game ended.");
+      if (_you.health() == 0) {
+        add_to_show("You have lost.");
+      }
+      else {
+        add_to_show("You are victorior.");
+      }
+      _state = State::ended;
+    }
+    else {
+      spdlog::warn("Unknown event: {}", event.name());
+    }
+  }
+}
+
+void Application::render()
+{
+  _window.text(std::format("Your name: {}", _you.name()));
+  _window.text(std::format("Your health: {}", _you.health()));
+  _window.text(std::format("Your damage: {}", _you.damage()));
+  _window.text(std::format("Your defense: {}", _you.defense()));
 
   switch (_state) {
   case State::greeting:
@@ -94,39 +130,43 @@ void Application::tick()
     break;
   }
 
-  spdlog::trace("Leaving {}", std::source_location::current().function_name());
+  auto const now{glfwGetTime()};
+  for (auto it{_messages.begin()}; it != _messages.end();) {
+    if (it->first < now) {
+      it = _messages.erase(it);
+    }
+    else {
+      _window.text(it->second);
+      ++it;
+    }
+  }
+
+  _window.render();
 }
 
 void Application::handle_greeting()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  spdlog::info("Type \"start\" to begin the game!");
-  spdlog::info("Use \"say <sentence>\" to speak to everyone!");
-  std::string choice;
-  std::getline(std::cin, choice);
-  if (choice == "start") {
-    _state = State::starting;
-  }
-  else if (choice.substr(0, 4) == "say ") {
+  // ImGui::LabelText("lebel", "fmt");
+  static std::string buf(32, '\0');
+  ImGui::InputTextWithHint("Message", "type your message here...", buf.data(),
+                           buf.size());
+  if (ImGui::Button("send")) {
     Command say{"say"s};
-    say.add_arg(choice.substr(4));
-    if (json::parse(request<std::string>(say)).get<std::string>() !=
-        "ok, from server commands") {
-      assert(false); // TODO(shelpam): Improve this; seems possible but when
-                     // will it present?
-    }
+    say.add_arg(buf);
+    assert(json::parse(request<std::string>(say)).get<std::string>() == "ok");
     // Keep state unchanged.
   }
-  else if (choice == "fuck") {
+  if (ImGui::Button("start")) {
+    _state = State::starting;
+  }
+  if (ImGui::Button("fuck")) {
     Command fuck{"fuck"s};
     auto response(json::parse(request<std::string>(fuck)));
     if (response.get<std::string>() == "ok") {
-      spdlog::info("Fuck succeeded");
+      add_to_show("Fuck succeeded");
     }
-  }
-  else {
-    spdlog::info("Unknown command '{}'", choice);
   }
 }
 
@@ -140,7 +180,6 @@ void Application::handle_starting()
   /*  std::println("{} has {} health.", player.name(), player.health());*/
   /*}*/
   /*std::println("");*/
-  _state = State::running;
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
@@ -149,25 +188,6 @@ void Application::handle_running()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
-  while (true) {
-    Command query_event{"query-event"s};
-    query_event.add_arg(_game_id);
-    auto event_json_str{request<std::string>(query_event)};
-    spdlog::debug("Requested json: {}", event_json_str);
-    auto const event{json::parse(std::move(event_json_str)).get<std::string>()};
-
-    if (event == "no") {
-      break;
-    }
-
-    spdlog::info("Event: {}", event);
-
-    if (event == "ended") {
-      _state = State::ended;
-      break;
-    }
-  }
-
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
@@ -175,32 +195,59 @@ void Application::handle_ended()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
-  spdlog::info("Continue? y/[n]");
-  std::string choice;
-  std::getline(std::cin, choice);
-  _state = choice == "y" ? State::starting : State::greeting;
+  _window.text("Continue?");
+  if (ImGui::Button("Yes")) {
+    _state = State::starting;
+  }
+  if (ImGui::Button("No")) {
+    _state = State::greeting;
+  }
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
 void Application::start_new_game()
 {
-  while (true) {
-    auto const players_list{request<std::string>(Command{"list-players"s})};
-    spdlog::info("Players online: {}", players_list);
-    spdlog::info("Who do you want battle with?");
-    std::string choice;
-    std::getline(std::cin, choice);
-    Command battle{"battle"s};
-    battle.add_arg(choice);
-    auto const response{request<std::string>(battle)};
-    auto const parts{split_by(response)};
-    if (parts[0] == "ok") {
-      _game_id = std::stoull(parts[1]);
-      break;
+  auto listed_players{request<std::string>(Command{"list-players"s})};
+  auto const players{
+      json::parse(listed_players).get<std::map<std::string, Player>>()};
+  spdlog::debug("Players online: {}", listed_players);
+  _window.text("Who do you want battle with?");
+
+  for (auto const &[_, player] : players) {
+    if (ImGui::Button(player.name().c_str())) {
+      Command battle{"battle"s};
+      battle.add_arg(player.name());
+      Command result{json::parse(request<std::string>(battle))};
+      if (result.name() == "ok") {
+        _game_id = result.get_param<std::size_t>("game-id");
+        _state = State::running;
+      }
+      else if (result.name() == "error") {
+        spdlog::warn("{}", result.get_arg<std::string>(0));
+      }
+      else {
+        spdlog::warn("Unknow result: {}", result.name());
+      }
     }
-    spdlog::warn("{}", response);
   }
+}
+
+void Application::add_to_show(std::string message)
+{
+  constexpr double deferred{10};
+  _messages.insert({glfwGetTime() + deferred, std::move(message)});
+}
+
+void Application::check_login()
+{
+  static bool logged_in{};
+  if (logged_in) {
+    return;
+  }
+  logged_in = true;
+  Command login{"login"s};
+  spdlog::info("Connected to the server: {}", request<std::string>(login));
 }
 
 auto connect(asio::io_context &io_context, std::string_view const host,

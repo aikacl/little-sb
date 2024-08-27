@@ -5,7 +5,7 @@
 
 auto main(int argc, char *argv[]) -> int
 {
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::trace);
   Window::initialize();
 
   try {
@@ -14,7 +14,7 @@ auto main(int argc, char *argv[]) -> int
       return 0;
     }
 
-    Application app{"localhost", 1438, argv[1]};
+    Application app{"154.7.177.38", 1438, argv[1]};
     app.run();
   }
   catch (std::exception &e) {

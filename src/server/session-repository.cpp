@@ -5,9 +5,11 @@
 
 Session_repository::Session_repository(
     asio::io_context &io_context, std::uint16_t const port,
-    std::function<Packet(Packet)> on_reading_packet)
+    std::function<Packet(Packet)> on_read_packet,
+    std::function<void()> post_session_end)
     : _acceptor{io_context, tcp::endpoint{tcp::v6(), port}},
-      _on_reading_packet{std::move(on_reading_packet)}
+      _on_read_packet{std::move(on_read_packet)},
+      _post_session_end{std::move(post_session_end)}
 {
 }
 
@@ -36,11 +38,7 @@ void Session_repository::on_accepting_connection(std::error_code ec,
     spdlog::trace("Accepted session address in memory: {}",
                   static_cast<void const *>(session.get()));
     // TODO(shelpam): issue here, should I use &session instead?
-    auto post_session_end{[this, session]() {
-      spdlog::info("{} disconnected", static_cast<void const *>(session.get()));
-      _sessions.extract(session);
-    }};
-    session->start(_on_reading_packet, post_session_end);
+    session->start(_on_read_packet, _post_session_end);
   }
   do_accept();
 }

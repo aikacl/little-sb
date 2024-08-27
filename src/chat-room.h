@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <string_view>
-#include <unordered_set>
 
 class Observer {
 public:
@@ -21,5 +21,5 @@ public:
   void notify(std::string_view message);
 
 private:
-  std::unordered_set<std::weak_ptr<Observer>> _receivers;
+  std::set<std::weak_ptr<Observer>, std::owner_less<>> _receivers;
 };
