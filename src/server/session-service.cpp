@@ -12,8 +12,7 @@ Session_service::Session_service(Server *server, std::uint16_t const port,
       _session_repo{server->io_context(), port,
                     [this](Packet packet) -> Packet {
                       return on_reading_packet(std::move(packet));
-                    },
-                    []() {}},
+                    }},
       _name{std::move(name)}
 {
 }
@@ -62,15 +61,13 @@ auto Session_service::on_reading_packet(Packet packet) -> Packet
   }
 
   // We must consider sign-ups, but for now just ignore it.
-  auto reply{
-      handle_player_command(packet.sender.username(),
-                            Command{json::parse(std::move(packet.payload))})};
-  spdlog::debug("Replying: {}", reply);
-  return Packet{Packet_sender{_name, _name}, json(std::move(reply)).dump()};
+  Command const player_command{json::parse(std::move(packet.payload))};
+  auto reply{handle_player_command(packet.sender.username(), player_command)};
+  return Packet{Packet_sender{_name, _name}, reply.dump()};
 }
 
-auto Session_service::handle_player_command(
-    std::string const &player, Command const &command) -> std::string
+auto Session_service::handle_player_command(std::string const &player,
+                                            Command const &command) -> Event
 {
   spdlog::trace("Handling player's command");
 
@@ -80,51 +77,53 @@ auto Session_service::handle_player_command(
         {player, Player{player, little_sb::random::uniform(20, 25),
                         little_sb::random::uniform(3, 7),
                         little_sb::random::uniform(1, 5)}});
-    return "Ok, you have logged in.";
+    spdlog::info("{} logged in", player);
+    // When logged in, the player had upload its data, and we create new
+    // information if the player instance doesn't exist. So here the player
+    // must exist.
+    Event e{"ok"};
+    e.add_arg(_server->_players[player]);
+    return e;
   }
   if (command.name() == "battle") {
     auto const &target{command.get_arg<std::string>(0)};
+    spdlog::debug("target: {}, player: {}", target, player);
     if (target == player) {
-      Event error{"error"s};
-      error.add_arg("Can not select yourself as a component.");
-      return error.dump();
+      Event e{"error"s};
+      e.add_arg("Can not select yourself as a component.");
+      return e;
     }
     if (!_server->_players.contains(target)) {
-      Event error{"error"s};
-      error.add_arg("Player not found.");
-      return error.dump();
+      Event e{"error"s};
+      e.add_arg("Player not found.");
+      return e;
     }
     auto const &game{_server->allocate_game(
         {&_server->_players[player], &_server->_players[target]})};
     Event battle{"battle"s};
     battle.set_param("from", player);
     push_event(target, battle);
-    Command ok{"ok"s};
-    ok.set_param("game-id", game.id());
-    return ok.dump();
-  }
-  if (command.name() == "damage") {
+    Event e{"ok"s};
+    e.set_param("game-id", game.id());
+    return e;
   }
   if (command.name() == "query-event") {
     if (_events[player].empty()) {
       push_event(player, Event("none"s));
     }
-    return pop_event(player).dump();
+    return pop_event(player);
   }
   if (command.name() == "list-players") {
-    return json(_server->_players).dump();
-  }
-  if (command.name() == "query-player") {
-    // When logged in, the player had upload its data, and we create new
-    // information if the player instance doesn't exist. So here the player
-    // must exist.
-    return json(_server->_players[player]).dump();
+    Event e{"ok"};
+    e.add_arg(_server->_players);
+    return e;
   }
   if (_server->_server_commands.contains(command.name())) {
     return _server->_server_commands.at(command.name())
-        ->execute(player, command)
-        .dump();
+        ->execute(player, command);
   }
 
-  return std::format("Unrecognized command {}", command.name());
+  Event e{"error"};
+  e.add_arg(std::format("Unrecognized command {}", command.name()));
+  return e;
 }

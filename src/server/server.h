@@ -42,5 +42,5 @@ private:
   asio::io_context _io_context;
   Session_service _session_service;
 
-  static constexpr std::size_t max_tick_per_second{60};
+  static constexpr std::size_t max_tick_per_second{240};
 };

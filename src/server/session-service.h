@@ -9,6 +9,8 @@ class Command;
 class Server;
 using Event = Command;
 
+// Controls all stuff related to sending/receiving packets, ensuring that the
+// packets arrive at destination without coalescing.
 class Session_service {
 public:
   Session_service(Server *server, std::uint16_t port, std::string name);
@@ -25,7 +27,7 @@ private:
   // @return
   //  Result_type
   auto handle_player_command(std::string const &player,
-                             Command const &command) -> std::string;
+                             Command const &command) -> Event;
 
   Server *_server;
   Session_repository _session_repo;

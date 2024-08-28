@@ -43,9 +43,10 @@ public:
     }
     else {
       Event game_end{"game-end"};
-      for (auto const &player : _players) {
-        _session_service->push_event(player->name(), game_end);
-      }
+      _session_service->push_event(_players[0]->name(), game_end);
+      Event message("message");
+      message.add_arg("game-end");
+      _session_service->push_event(_players[0]->name(), message);
       _ended = true;
     }
   }
@@ -68,7 +69,7 @@ public:
 private:
   std::size_t _id;
   std::queue<std::string> _pending_events;
-  std::array<Player *, 2> _players;
+  std::array<Player *, 2> _players; // First sender, second receiver
   Session_service *_session_service;
   bool _ended{};
   int _turn{};

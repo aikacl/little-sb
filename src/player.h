@@ -10,8 +10,8 @@ using Player_ptr = std::shared_ptr<Player>;
 
 class Player {
 public:
-  // Don't use this
-  [[deprecated]] Player();
+  // Don't use this. This is for json creation.
+  Player();
 
   Player(std::string name, int health, int damage, int defense);
 

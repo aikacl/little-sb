@@ -18,6 +18,7 @@ void Server::run()
   spdlog::info("Server started. Accepting connections...");
   _session_service.start();
   run_main_game_loop();
+  spdlog::info("Server running ended.");
 }
 
 void Server::shutdown()
@@ -38,8 +39,8 @@ Server::Server(std::uint16_t const bind_port)
 {
   register_command_executor(
       std::make_unique<Say_server_command_executor>(this));
-  register_command_executor(
-      std::make_unique<Query_event_server_command_executor>(this));
+  // register_command_executor(
+  //     std::make_unique<Query_event_server_command_executor>(this));
   register_command_executor(
       std::make_unique<Fuck_server_command_executor>(this));
 }
@@ -72,20 +73,21 @@ auto Server::allocate_game(std::array<Player *, 2> players) -> Game &
 
 void Server::run_main_game_loop()
 {
-  spdlog::trace("Call {}", std::source_location::current().function_name());
+  spdlog::info("Main game loop started");
 
-  auto time_since_last_update{std::chrono::steady_clock::now()};
+  auto last_update{std::chrono::steady_clock::now()};
   while (!_main_game_loop_should_stop) {
     _io_context.poll();
 
-    std::this_thread::sleep_until(time_since_last_update + tick_interval());
-    for (auto &[id, game] : _games) {
-      game.tick();
+    if (std::chrono::steady_clock::now() >= last_update + tick_interval()) {
+      for (auto &[id, game] : _games) {
+        game.tick();
+      }
+      last_update = std::chrono::steady_clock::now();
     }
-    time_since_last_update = std::chrono::steady_clock::now();
   }
 
-  spdlog::trace("Main game loop over");
+  spdlog::info("Main game loop over");
 }
 
 auto Server::verify_userinfo(Packet_sender const &user) const -> bool

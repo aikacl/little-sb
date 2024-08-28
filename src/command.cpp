@@ -3,19 +3,19 @@
 
 Command::Command(char const *name) : _data(json::object())
 {
-  spdlog::debug("Creating command from std::string: {}", _data.dump());
+  // spdlog::debug("Creating command from char const*: {}", name);
   _data["name"] = name;
 }
 
 Command::Command(std::string name) : _data(json::object())
 {
-  spdlog::debug("Creating command from std::string: {}", _data.dump());
+  // spdlog::debug("Creating command from std::string: {}", name);
   _data["name"] = name;
 }
 
 Command::Command(json data) : _data(std::move(data))
 {
-  spdlog::debug("Creating command from json: {}", _data.dump());
+  // spdlog::debug("Creating command from json: {}", _data.dump());
 }
 
 auto Command::name() const -> std::string

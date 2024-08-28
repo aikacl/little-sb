@@ -2,6 +2,7 @@
 
 #include "user.h"
 #include <spdlog/spdlog.h>
+#include <string_view>
 
 using nlohmann::json;
 using Packet_sender = User_info;

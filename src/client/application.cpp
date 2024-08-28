@@ -1,17 +1,13 @@
 #include "application.h"
+#include "event.h"
+#include "handle-error.h"
 #include "imgui.h"
 #include "player.h"
-#include "server/session-service.h"
 #include <asio.hpp>
-#include <map>
-#include <utility>
+#include <cassert>
 
-Application::Application(std::string_view const host, std::uint16_t const port,
-                         std::string name)
-    : _session{std::make_shared<Session>(connect(_io_context, host, port))},
-      _name{std::move(name)},
-      _you{json::parse(request<std::string>(Command{"query-player"s}))
-               .get<Player>()}
+Application::Application(std::string_view const host, std::uint16_t const port)
+    : _session{std::make_shared<Session>(connect(_io_context, host, port))}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -21,15 +17,17 @@ void Application::run()
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
   while (!should_stop() && !_window.should_close()) {
-    tick(); // TODO(shelpam): this shouldn't be blocking.
+    // TODO: REMOVE THIS
+    // async_request(Command{"login"}, [this](Event const &e) {
+    //   if (e.name() != "ok") {
+    //     assert(false);
+    //   }
+    //   _you = std::make_shared<Player>(e.get_arg<Player>(0));
+    //   schedule_continuous_query_event();
+    //   _state = State::greeting;
+    // });
+    tick();
   }
-
-  _session->stop();
-}
-
-void Application::write(Session_ptr const &session, Command const &command)
-{
-  session->write(Packet{Packet_sender{_name, _name}, command.dump()});
 }
 
 auto Application::should_stop() const -> bool
@@ -39,81 +37,69 @@ auto Application::should_stop() const -> bool
 
 void Application::tick()
 {
-  spdlog::trace("Entering {}", std::source_location::current().function_name());
-
+  spdlog::trace("Ticking");
   poll_events();
   update();
   render();
-
-  spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
 void Application::poll_events()
 {
-  spdlog::trace("Call {}", std::source_location::current().function_name());
-
-  _io_context.poll();
+  _io_context.poll(); // TODO(shelpam): MAYBE WRONG: This should be
+                      // called only after _window.poll_events()
+  if (_io_context.stopped()) {
+    _io_context.restart();
+  }
   _window.poll_events();
-
-  spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
 void Application::update()
 {
-  using Event = Command;
-  while (true) {
-    Event event{json::parse(request<std::string>(Command{"query-event"}))};
+  // Async query event would be started before main loop.
 
-    if (event.name() == "none") {
-      break;
-    }
+  if (_state == State::starting) {
+    async_request(Command{"list-players"}, [this](Event const &e) {
+      if (e.name() != "ok") {
+        spdlog::warn("list-players returns {}, which is impossible.", e.name());
+        return;
+      }
 
-    if (event.name() == "broadcast") {
-      auto const from{event.get_param<std::string>("from")};
-      auto const what{event.get_arg<std::string>(0)};
-      spdlog::info("{} said: {}", from, what);
-      add_to_show(std::format("{} said: {}", from, what));
-    }
-    else if (event.name() == "battle") {
-      add_to_show(std::format("{} called for a fight with you.",
-                              event.get_param<std::string>("from")));
-    }
-    else if (event.name() == "fuck") {
-      add_to_show(std::format("You are fucked by {}",
-                              event.get_param<std::string>("fucker")));
-    }
-    else if (event.name() == "health-drop") {
-      auto const who{event.get_param<std::string>("player")};
-      auto const drop{event.get_param<int>("drop")};
-      add_to_show(std::format("{} has dropped {} health", who, drop));
-      if (who == _you.name()) {
-        _you.take_damage(drop);
-      }
-    }
-    else if (event.name() == "game-end") {
-      add_to_show("Game ended.");
-      if (_you.health() == 0) {
-        add_to_show("You have lost.");
-      }
-      else {
-        add_to_show("You are victorior.");
-      }
-      _state = State::ended;
-    }
-    else {
-      spdlog::warn("Unknown event: {}", event.name());
-    }
+      _players = e.get_arg<std::map<std::string, Player>>(0);
+      spdlog::debug("Players: {}", json(_players).dump());
+    });
   }
 }
 
 void Application::render()
 {
-  _window.text(std::format("Your name: {}", _you.name()));
-  _window.text(std::format("Your health: {}", _you.health()));
-  _window.text(std::format("Your damage: {}", _you.damage()));
-  _window.text(std::format("Your defense: {}", _you.defense()));
+  if (_you) {
+    show_user_info();
+  }
 
   switch (_state) {
+  case State::unlogged_in:
+    static std::array<char, 32> name_buf{};
+    ImGui::InputText("Your name here", name_buf.data(), name_buf.size());
+    _name = std::string(name_buf.data(), std::strlen(name_buf.data()));
+    if (ImGui::Button("Login")) {
+      if (_name.empty()) {
+        add_to_show("error: Your name can not be empty. Please retry.");
+        return;
+      }
+      async_request(Command{"login"}, [this](Event const &e) {
+        if (e.name() != "ok") {
+          assert(false);
+        }
+        _you = std::make_shared<Player>(e.get_arg<Player>(0));
+        schedule_continuous_query_event();
+        _state = State::greeting;
+      });
+      _state = State::logging;
+    }
+    break;
+  case State::logging:
+    _window.text("Logging in...");
+    break;
   case State::greeting:
     handle_greeting();
     break;
@@ -144,29 +130,44 @@ void Application::render()
   _window.render();
 }
 
+void Application::show_user_info()
+{
+  _window.text(std::format("Your name: {}", _you->name()));
+  _window.text(std::format("Your health: {}", _you->health()));
+  _window.text(std::format("Your damage: {}", _you->damage()));
+  _window.text(std::format("Your defense: {}", _you->defense()));
+}
+
 void Application::handle_greeting()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
   // ImGui::LabelText("lebel", "fmt");
-  static std::string buf(32, '\0');
+  static std::array<char, 32> buf{};
   ImGui::InputTextWithHint("Message", "type your message here...", buf.data(),
                            buf.size());
   if (ImGui::Button("send")) {
     Command say{"say"s};
-    say.add_arg(buf);
-    assert(json::parse(request<std::string>(say)).get<std::string>() == "ok");
+    say.add_arg(std::string{buf.data(), std::strlen(buf.data())});
+    async_request(say, [](Event const &e) {
+      if (e.name() == "ok") {
+        spdlog::info("Message successfully sent.");
+      }
+      else {
+        spdlog::warn("Failed to send message.");
+      }
+    });
     // Keep state unchanged.
   }
   if (ImGui::Button("start")) {
     _state = State::starting;
   }
   if (ImGui::Button("fuck")) {
-    Command fuck{"fuck"s};
-    auto response(json::parse(request<std::string>(fuck)));
-    if (response.get<std::string>() == "ok") {
-      add_to_show("Fuck succeeded");
-    }
+    async_request(Command{"fuck"}, [this](Event const &event) {
+      if (event.name() == "ok") {
+        add_to_show("Fuck succeeded");
+      }
+    });
   }
 }
 
@@ -174,7 +175,7 @@ void Application::handle_starting()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
-  start_new_game();
+  starting_new_game();
   /*std::println("Game started. The following is the health of players:");*/
   /*for (auto const &player : _players) {*/
   /*  std::println("{} has {} health.", player.name(), player.health());*/
@@ -206,30 +207,90 @@ void Application::handle_ended()
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
-void Application::start_new_game()
+void Application::starting_new_game()
 {
-  auto listed_players{request<std::string>(Command{"list-players"s})};
-  auto const players{
-      json::parse(listed_players).get<std::map<std::string, Player>>()};
-  spdlog::debug("Players online: {}", listed_players);
+  _window.text("Making new game...");
   _window.text("Who do you want battle with?");
-
-  for (auto const &[_, player] : players) {
+  if (ImGui::Button("Go back")) {
+    _state = State::greeting;
+  }
+  for (auto const &[_, player] : _players) {
     if (ImGui::Button(player.name().c_str())) {
-      Command battle{"battle"s};
+      Command battle{"battle"};
       battle.add_arg(player.name());
-      Command result{json::parse(request<std::string>(battle))};
-      if (result.name() == "ok") {
-        _game_id = result.get_param<std::size_t>("game-id");
-        _state = State::running;
-      }
-      else if (result.name() == "error") {
-        spdlog::warn("{}", result.get_arg<std::string>(0));
+      async_request(battle, [this](Event const &e) {
+        if (e.name() == "ok") {
+          _game_id = e.get_param<std::size_t>("game-id");
+          _state = State::running;
+        }
+        else if (e.name() == "error") {
+          spdlog::warn("{}", e.get_arg<std::string>(0));
+          add_to_show("warning: " + e.get_arg<std::string>(0));
+        }
+        else {
+          spdlog::warn("Unknown result: {}", e.name());
+        }
+      });
+    }
+  }
+}
+
+void Application::process_event(Event const &event)
+{
+  if (event.name() == "none") {
+    return;
+  }
+
+  spdlog::info("Event: {}", event.dump());
+
+  if (event.name() == "broadcast") {
+    auto const from{event.get_param<std::string>("from")};
+    auto const what{event.get_arg<std::string>(0)};
+    spdlog::info("{} said: {}", from, what);
+    add_to_show(std::format("{} said: {}", from, what));
+  }
+  else if (event.name() == "battle") {
+    add_to_show(std::format("{} called for a fight with you.",
+                            event.get_param<std::string>("from")));
+  }
+  else if (event.name() == "fuck") {
+    add_to_show(std::format("You are fucked by {}",
+                            event.get_param<std::string>("fucker")));
+  }
+  else if (event.name() == "health-drop") {
+    auto const who{event.get_param<std::string>("player")};
+    auto const drop{event.get_param<int>("drop")};
+    add_to_show(std::format("{} has dropped {} health", who, drop));
+    if (who == _you->name()) {
+      _you->take_damage(drop);
+    }
+  }
+  else if (event.name() == "game-end") {
+    add_to_show("Game ended.");
+    if (_you->health() == 0) {
+      add_to_show("You have lost.");
+    }
+    else {
+      add_to_show("You are victorior.");
+    }
+    _state = State::ended;
+  }
+  else if (event.name() == "message") {
+    if (event.get_arg<std::string>(0) == "game-end") {
+      add_to_show("Game ended.");
+      if (_you->health() == 0) {
+        add_to_show("You have lost.");
       }
       else {
-        spdlog::warn("Unknow result: {}", result.name());
+        add_to_show("You are victorior.");
       }
     }
+    else {
+      add_to_show(event.get_arg<std::string>(0));
+    }
+  }
+  else {
+    spdlog::warn("Unknown event: {}", event.name());
   }
 }
 
@@ -239,27 +300,34 @@ void Application::add_to_show(std::string message)
   _messages.insert({glfwGetTime() + deferred, std::move(message)});
 }
 
-void Application::check_login()
+void Application::async_request(Command const &command,
+                                std::function<void(Event)> on_replied)
 {
-  static bool logged_in{};
-  if (logged_in) {
-    return;
-  }
-  logged_in = true;
-  Command login{"login"s};
-  spdlog::info("Connected to the server: {}", request<std::string>(login));
+  spdlog::debug("Scheduling request: {}", command.dump());
+  Packet packet{Packet_sender{_name, _name}, command.dump()};
+  _session->schedule_request(
+      std::move(packet), [on_replied{std::move(on_replied)}](Packet packet) {
+        on_replied(Event{json::parse(std::move(packet.payload))});
+      });
 }
 
-auto connect(asio::io_context &io_context, std::string_view const host,
-             std::uint16_t const port) -> tcp::socket
+auto connect(asio::io_context &io_context, std::string_view host,
+             std::uint16_t port) -> tcp::socket
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
   tcp::socket socket{io_context};
-  auto const endpoints{
-      tcp::resolver{io_context}.resolve(host, std::to_string(port))};
+  auto endpoints{tcp::resolver{io_context}.resolve(host, std::to_string(port))};
   std::error_code ec;
   asio::connect(socket, endpoints, ec);
   handle_error(ec);
   return socket;
+}
+
+void Application::schedule_continuous_query_event()
+{
+  async_request(Command{"query-event"}, [this](Event const &event) {
+    process_event(event);
+    schedule_continuous_query_event();
+  });
 }

@@ -4,7 +4,7 @@
 #include <spdlog/spdlog.h>
 #include <system_error>
 
-inline void handle_error(std::error_code const ec)
+inline void handle_error(std::error_code ec)
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
