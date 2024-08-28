@@ -46,7 +46,7 @@ public:
       _session_service->push_event(_players[0]->name(), game_end);
       Event message("message");
       message.add_arg("game-end");
-      _session_service->push_event(_players[0]->name(), message);
+      _session_service->push_event(_players[1]->name(), message);
       _ended = true;
     }
   }
