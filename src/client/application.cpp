@@ -76,9 +76,9 @@ void Application::render()
     show_user_info();
   }
 
+  static std::array<char, 32> name_buf{};
   switch (_state) {
   case State::unlogged_in:
-    static std::array<char, 32> name_buf{};
     ImGui::InputText("Your name here", name_buf.data(), name_buf.size());
     _name = std::string(name_buf.data(), std::strlen(name_buf.data()));
     if (ImGui::Button("Login")) {
