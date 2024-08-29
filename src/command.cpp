@@ -1,6 +1,16 @@
 #include "command.h"
 #include <spdlog/spdlog.h>
 
+void to_json(json &j, const Command &cmd)
+{
+  j = cmd._data;
+}
+
+void from_json(const json &j, Command &cmd)
+{
+  cmd._data = j;
+}
+
 Command::Command(char const *name) : _data(json::object())
 {
   // spdlog::debug("Creating command from char const*: {}", name);

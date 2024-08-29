@@ -93,7 +93,13 @@ void Window::poll_events() const
   // ImGui::ShowDemoWindow(); // Show demo window! :)
 }
 
-void Window::text(std::string const &text) const
+auto Window::button(std::string const &label) -> bool
+{
+  use();
+  return ImGui::Button(label.c_str());
+}
+
+void Window::text(std::string const &text)
 {
   use();
   ImGui::Text("%s", text.c_str());

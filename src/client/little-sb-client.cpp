@@ -12,8 +12,8 @@ auto main(int /*argc*/, char ** /*argv*/) -> int
   // The same as server
   try {
 #endif
-    constexpr std::string_view server_host{"154.7.177.38"};
-    // constexpr std::string_view server_host{"localhost"};
+    // constexpr std::string_view server_host{"154.7.177.38"};
+    constexpr std::string_view server_host{"localhost"};
     Application app{server_host, 1438};
     app.run();
 #ifdef NDEBUG

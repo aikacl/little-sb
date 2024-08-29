@@ -25,7 +25,8 @@ public:
   void poll_events() const;
   void render() const;
 
-  void text(std::string const &text) const;
+  auto button(std::string const &label) -> bool;
+  void text(std::string const &text);
 
   [[nodiscard]] auto should_close() const -> bool;
 

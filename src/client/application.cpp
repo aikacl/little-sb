@@ -16,23 +16,14 @@ void Application::run()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
-  while (!should_stop() && !_window.should_close()) {
-    // TODO: REMOVE THIS
-    // async_request(Command{"login"}, [this](Event const &e) {
-    //   if (e.name() != "ok") {
-    //     assert(false);
-    //   }
-    //   _you = std::make_shared<Player>(e.get_arg<Player>(0));
-    //   schedule_continuous_query_event();
-    //   _state = State::greeting;
-    // });
+  while (!should_stop()) {
     tick();
   }
 }
 
 auto Application::should_stop() const -> bool
 {
-  return _state == State::should_stop;
+  return _state == State::should_stop || _window.should_close();
 }
 
 void Application::tick()
@@ -45,8 +36,7 @@ void Application::tick()
 
 void Application::poll_events()
 {
-  _io_context.poll(); // TODO(shelpam): MAYBE WRONG: This should be
-                      // called only after _window.poll_events()
+  _io_context.poll();
   if (_io_context.stopped()) {
     _io_context.restart();
   }
@@ -57,7 +47,18 @@ void Application::update()
 {
   // Async query event would be started before main loop.
 
-  if (_state == State::starting) {
+  if (_you) {
+    async_request(Command{"sync"}, [this](Event const &e) {
+      _you = std::make_shared<Player>(e.get_arg<Player>(0));
+    });
+  }
+
+  if (_state == State::greeting) {
+    async_request(Command{"list-store-items"}, [this](Event const &e) {
+      _store_items = e.get_arg<std::map<std::string, Item>>(0);
+    });
+  }
+  else if (_state == State::starting) {
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
         spdlog::warn("list-players returns {}, which is impossible.", e.name());
@@ -136,6 +137,7 @@ void Application::show_user_info()
   _window.text(std::format("Your health: {}", _you->health()));
   _window.text(std::format("Your damage: {}", _you->damage()));
   _window.text(std::format("Your defense: {}", _you->defense()));
+  _window.text(std::format("Your money left: {}", _you->money()));
 }
 
 void Application::handle_greeting()
@@ -146,6 +148,7 @@ void Application::handle_greeting()
   static std::array<char, 32> buf{};
   ImGui::InputTextWithHint("Message", "type your message here...", buf.data(),
                            buf.size());
+  ImGui::SameLine();
   if (ImGui::Button("send")) {
     Command say{"say"s};
     say.add_arg(std::string{buf.data(), std::strlen(buf.data())});
@@ -168,6 +171,20 @@ void Application::handle_greeting()
         add_to_show("Fuck succeeded");
       }
     });
+  }
+  _window.text("");
+  _window.text("Store: (Press button to buy goods)");
+  _window.text("When you buy it, you use it.");
+  for (auto const &[_, item] : _store_items) {
+    if (_window.button(std::format("{} (${})", item.name, item.price))) {
+      Command buy{"buy"};
+      buy.add_arg(item.name);
+      async_request(buy, [this](Event const &e) {
+        if (e.name() != "ok") {
+          add_to_show(e.get_arg<std::string>(0));
+        }
+      });
+    }
   }
 }
 
@@ -225,7 +242,7 @@ void Application::starting_new_game()
         }
         else if (e.name() == "error") {
           spdlog::warn("{}", e.get_arg<std::string>(0));
-          add_to_show("warning: " + e.get_arg<std::string>(0));
+          add_to_show("error: " + e.get_arg<std::string>(0));
         }
         else {
           spdlog::warn("Unknown result: {}", e.name());
@@ -252,6 +269,10 @@ void Application::process_event(Event const &event)
   else if (event.name() == "battle") {
     add_to_show(std::format("{} called for a fight with you.",
                             event.get_param<std::string>("from")));
+  }
+  else if (event.name() == "cure") {
+    _you->cure(event.get_arg<int>(0));
+    add_to_show(event.get_param<std::string>("cause"));
   }
   else if (event.name() == "fuck") {
     add_to_show(std::format("You are fucked by {}",

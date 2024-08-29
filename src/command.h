@@ -5,6 +5,9 @@
 using namespace std::literals;
 
 class Command {
+  friend void to_json(json &j, const Command &cmd);
+  friend void from_json(const json &j, Command &cmd);
+
 public:
   explicit Command(char const *name);
   explicit Command(std::string name);

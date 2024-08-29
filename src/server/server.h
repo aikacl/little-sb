@@ -1,5 +1,6 @@
 #pragma once
 
+#include "item.h"
 #include "packet.h"
 #include "server/session-service.h"
 #include <asio.hpp>
@@ -35,6 +36,7 @@ private:
 
   std::atomic<bool> _main_game_loop_should_stop;
   std::map<std::uint64_t, Game> _games;
+  std::map<std::string, Item> _store_items;
   std::map<std::string, Player> _players;
   std::map<std::string, std::unique_ptr<Server_command_executor>>
       _server_commands;

@@ -35,7 +35,8 @@ auto Server::io_context() -> asio::io_context &
 }
 
 Server::Server(std::uint16_t const bind_port)
-    : _session_service(this, bind_port, "Server")
+    : _store_items{{"First aid kit", Item{.name{"First aid kit"}, .price{3}}}},
+      _session_service(this, bind_port, "Server")
 {
   register_command_executor(
       std::make_unique<Say_server_command_executor>(this));

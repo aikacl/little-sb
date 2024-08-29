@@ -2,6 +2,7 @@
 
 #include "command.h"
 #include "event.h"
+#include "item.h"
 #include "player.h"
 #include "session.h"
 #include "window.h"
@@ -48,6 +49,7 @@ private:
   Player_ptr _you;
   std::uint64_t _game_id{};
   std::map<std::string, Player> _players;
+  std::map<std::string, Item> _store_items;
   Window _window;
   std::map<double, std::string> _messages;
 };
