@@ -135,7 +135,9 @@ void Application::show_user_info()
 {
   _window.text(std::format("Your name: {}", _you->name()));
   _window.text(std::format("Your health: {}", _you->health()));
-  _window.text(std::format("Your damage: {}", _you->damage()));
+  _window.text(std::format("Your damage range: {}", _you->damage_range()));
+  _window.text(
+      std::format("Your critical hit rate: {:5}", _you->critical_hit_rate()));
   _window.text(std::format("Your defense: {}", _you->defense()));
   _window.text(std::format("Your money left: {}", _you->money()));
 }
@@ -149,7 +151,7 @@ void Application::handle_greeting()
   ImGui::InputTextWithHint("Message", "type your message here...", buf.data(),
                            buf.size());
   ImGui::SameLine();
-  if (ImGui::Button("send")) {
+  if (ImGui::Button("Send")) {
     Command say{"say"s};
     say.add_arg(std::string{buf.data(), std::strlen(buf.data())});
     async_request(say, [](Event const &e) {
@@ -162,10 +164,10 @@ void Application::handle_greeting()
     });
     // Keep state unchanged.
   }
-  if (ImGui::Button("start")) {
+  if (ImGui::Button("Battle")) {
     _state = State::starting;
   }
-  if (ImGui::Button("fuck")) {
+  if (ImGui::Button("Fuck")) {
     async_request(Command{"fuck"}, [this](Event const &event) {
       if (event.name() == "ok") {
         add_to_show("Fuck succeeded");

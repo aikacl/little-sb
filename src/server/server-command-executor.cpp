@@ -3,8 +3,6 @@
 #include "game.h"
 #include "server.h"
 
-Server_command_executor::~Server_command_executor() = default;
-
 Server_command_executor::Server_command_executor(Server *server)
     : _server{server}
 {

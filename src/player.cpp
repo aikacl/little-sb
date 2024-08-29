@@ -1,9 +1,11 @@
 #include "player.h"
+#include "random.h"
 
 Player::Player() = default;
 
-Player::Player(std::string name, int health, int damage, int defense, int money)
-    : _name{std::move(name)}, _health{health}, _damage{damage},
+Player::Player(std::string name, int health, std::pair<int, int> damage_range,
+               int defense, int money)
+    : _name{std::move(name)}, _health{health}, _damage_range{damage_range},
       _defense{defense}, _money{money}
 {
 }
@@ -38,12 +40,24 @@ auto Player::health() const -> int
 
 auto Player::damage_to(Player const &target) const -> int
 {
-  return std::max(_damage - target._defense, 0);
+  auto const original{hit_one() - target._defense};
+  return std::max(original, 0);
 }
 
-auto Player::damage() const -> int
+[[nodiscard]] auto Player::damage_range() const -> std::pair<int, int>
 {
-  return _damage;
+  return _damage_range;
+}
+
+auto Player::hit_one() const -> int
+{
+  auto const damage{
+      little_sb::random::uniform(_damage_range.first, _damage_range.second)};
+  auto const scale{(1 + (little_sb::random::probability(_critical_hit_rate)
+                             ? _critical_hit_scale
+                             : 0))};
+  auto const scaled_damage{static_cast<float>(damage) * scale};
+  return static_cast<int>(scaled_damage);
 }
 
 auto Player::defense() const -> int
@@ -59,4 +73,12 @@ void Player::cost_money(int cost)
 auto Player::money() const -> int
 {
   return _money;
+}
+auto Player::critical_hit_rate() const -> float
+{
+  return _critical_hit_rate;
+}
+void Player::critical_hit_rate(float rate)
+{
+  _critical_hit_rate = rate;
 }

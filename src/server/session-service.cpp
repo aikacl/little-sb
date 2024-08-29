@@ -71,22 +71,28 @@ auto Session_service::handle_player_command(std::string const &player_name,
 {
   spdlog::trace("Handling player's command");
 
+  // We create new information if the player instance doesn't exist. So here the
+  // player should be existing.
+  if (!_server->_players.contains(player_name)) {
+    _server->_players.insert(
+        {player_name, Player{player_name,
+                             little_sb::random::uniform(20, 25),
+                             {3, little_sb::random::uniform(3, 7)},
+                             little_sb::random::uniform(1, 5),
+                             20}});
+    _server->_players.at(player_name)
+        .critical_hit_rate(little_sb::random::uniform(0.15, 0.2));
+  }
+
+  auto &player{_server->_players.at(player_name)};
+
   // TODO(ShelpAm): add authentication.
   if (command.name() == "login") {
-    _server->_players.insert(
-        {player_name, Player{player_name, little_sb::random::uniform(20, 25),
-                             little_sb::random::uniform(3, 7),
-                             little_sb::random::uniform(1, 5), 20}});
     spdlog::info("{} logged in", player_name);
-    // When logged in, the player had upload its data, and we create new
-    // information if the player instance doesn't exist. So here the player
-    // must exist.
     Event e{"ok"};
     e.add_arg(_server->_players[player_name]);
     return e;
   }
-
-  auto &player{_server->_players.at(player_name)};
 
   if (command.name() == "battle") {
     auto const &target{command.get_arg<std::string>(0)};

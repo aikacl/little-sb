@@ -3,7 +3,7 @@
 #include <print>
 #include <spdlog/spdlog.h>
 
-auto main(int /*argc*/, char ** /*argv*/) -> int
+auto main(int argc, char **argv) -> int
 {
   spdlog::set_level(spdlog::level::info);
   Window::initialize();
@@ -12,9 +12,9 @@ auto main(int /*argc*/, char ** /*argv*/) -> int
   // The same as server
   try {
 #endif
-    // constexpr std::string_view server_host{"154.7.177.38"};
-    constexpr std::string_view server_host{"localhost"};
-    Application app{server_host, 1438};
+    constexpr std::string_view remote_host{"154.7.177.38"};
+    constexpr std::string_view local_host{"localhost"};
+    Application app{argc == 1 ? remote_host : local_host, 1438};
     app.run();
 #ifdef NDEBUG
   }

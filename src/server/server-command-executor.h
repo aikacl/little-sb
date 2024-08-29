@@ -9,9 +9,9 @@ class Server_command_executor {
 public:
   // We should keep guarantee that `receiver` won't be released
   Server_command_executor(Server *server);
-  virtual ~Server_command_executor() = 0;
   virtual auto execute(std::string from, Command const &command) -> Event = 0;
   virtual constexpr auto name() -> std::string = 0;
+
   auto server() -> Server *;
 
 private:

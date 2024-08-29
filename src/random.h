@@ -4,14 +4,27 @@
 
 namespace little_sb::random {
 
-auto uniform(auto const lower_bound,
-             auto const upper_bound) -> decltype(upper_bound)
+template <typename T>
+inline auto uniform(T const lower_bound, T const upper_bound) -> T
 {
   static std::random_device rd;
   static std::mt19937_64 gen(rd());
 
-  std::uniform_int_distribution<> distrib{lower_bound, upper_bound};
-  return distrib(gen);
+  if constexpr (std::is_integral_v<T>) {
+    std::uniform_int_distribution<> distrib{lower_bound, upper_bound};
+    return distrib(gen);
+  }
+  else {
+    std::uniform_real_distribution<> distrib{lower_bound, upper_bound};
+    return distrib(gen);
+  }
+}
+
+// @param ratio The probability of which the funtion returns a true value.
+inline auto probability(float ratio) -> bool
+{
+  constexpr auto max{std::numeric_limits<int>::max()};
+  return static_cast<float>(uniform(0, max)) / static_cast<float>(max) <= ratio;
 }
 
 } // namespace little_sb::random
