@@ -58,7 +58,7 @@ void Application::update()
       _store_items = e.get_arg<std::map<std::string, Item>>(0);
     });
   }
-  else if (_state == State::starting) {
+  else if (_state == State::starting_battle) {
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
         spdlog::warn("list-players returns {}, which is impossible.", e.name());
@@ -77,12 +77,11 @@ void Application::render()
     show_user_info();
   }
 
-  static std::array<char, 32> name_buf{};
   switch (_state) {
   case State::unlogged_in:
-    ImGui::InputText("Your name here", name_buf.data(), name_buf.size());
-    _name = std::string(name_buf.data(), std::strlen(name_buf.data()));
-    if (ImGui::Button("Login")) {
+    ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
+    _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
+    if (_window.button("Login")) {
       if (_name.empty()) {
         add_to_show("error: Your name can not be empty. Please retry.");
         return;
@@ -104,7 +103,7 @@ void Application::render()
   case State::greeting:
     handle_greeting();
     break;
-  case State::starting:
+  case State::starting_battle:
     handle_starting();
     break;
   case State::running:
@@ -147,13 +146,14 @@ void Application::handle_greeting()
   spdlog::trace("Call {}", std::source_location::current().function_name());
 
   // ImGui::LabelText("lebel", "fmt");
-  static std::array<char, 32> buf{};
-  ImGui::InputTextWithHint("Message", "type your message here...", buf.data(),
-                           buf.size());
+  ImGui::InputTextWithHint("Message", "type your message here...",
+                           _message_input_buf.data(),
+                           _message_input_buf.size());
   ImGui::SameLine();
-  if (ImGui::Button("Send")) {
+  if (_window.button("Send")) {
     Command say{"say"s};
-    say.add_arg(std::string{buf.data(), std::strlen(buf.data())});
+    say.add_arg(std::string{_message_input_buf.data(),
+                            std::strlen(_message_input_buf.data())});
     async_request(say, [](Event const &e) {
       if (e.name() == "ok") {
         spdlog::info("Message successfully sent.");
@@ -162,12 +162,11 @@ void Application::handle_greeting()
         spdlog::warn("Failed to send message.");
       }
     });
-    // Keep state unchanged.
   }
-  if (ImGui::Button("Battle")) {
-    _state = State::starting;
+  if (_window.button("Start battle")) {
+    _state = State::starting_battle;
   }
-  if (ImGui::Button("Fuck")) {
+  if (_window.button("Fuck others")) {
     async_request(Command{"fuck"}, [this](Event const &event) {
       if (event.name() == "ok") {
         add_to_show("Fuck succeeded");
@@ -195,31 +194,21 @@ void Application::handle_starting()
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
   starting_new_game();
-  /*std::println("Game started. The following is the health of players:");*/
-  /*for (auto const &player : _players) {*/
-  /*  std::println("{} has {} health.", player.name(), player.health());*/
-  /*}*/
-  /*std::println("");*/
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
-void Application::handle_running()
-{
-  spdlog::trace("Entering {}", std::source_location::current().function_name());
-
-  spdlog::trace("Leaving {}", std::source_location::current().function_name());
-}
+void Application::handle_running() {}
 
 void Application::handle_ended()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
   _window.text("Continue?");
-  if (ImGui::Button("Yes")) {
-    _state = State::starting;
+  if (_window.button("Yes")) {
+    _state = State::starting_battle;
   }
-  if (ImGui::Button("No")) {
+  if (_window.button("No")) {
     _state = State::greeting;
   }
 
@@ -230,17 +219,18 @@ void Application::starting_new_game()
 {
   _window.text("Making new game...");
   _window.text("Who do you want battle with?");
-  if (ImGui::Button("Go back")) {
+  if (_window.button("Go back")) {
     _state = State::greeting;
   }
   for (auto const &[_, player] : _players) {
-    if (ImGui::Button(player.name().c_str())) {
+    if (_window.button(player.name())) {
       Command battle{"battle"};
       battle.add_arg(player.name());
       async_request(battle, [this](Event const &e) {
         if (e.name() == "ok") {
           _game_id = e.get_param<std::size_t>("game-id");
           _state = State::running;
+          add_to_show("Game started.");
         }
         else if (e.name() == "error") {
           spdlog::warn("{}", e.get_arg<std::string>(0));

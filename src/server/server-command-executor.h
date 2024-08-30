@@ -7,6 +7,7 @@ class Server;
 
 class Server_command_executor {
 public:
+  virtual ~Server_command_executor() = default;
   // We should keep guarantee that `receiver` won't be released
   Server_command_executor(Server *server);
   virtual auto execute(std::string from, Command const &command) -> Event = 0;

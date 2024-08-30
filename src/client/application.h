@@ -12,7 +12,7 @@ class Application {
     unlogged_in,
     logging,
     greeting,
-    starting,
+    starting_battle,
     running,
     ended,
     should_stop,
@@ -46,12 +46,18 @@ private:
   Session_ptr _session;
   State _state{State::unlogged_in};
   std::string _name;
+
+  Window _window;
+
   Player_ptr _you;
-  std::uint64_t _game_id{};
+  std::size_t _game_id{};
+  std::map<double, std::string> _messages;
   std::map<std::string, Player> _players;
   std::map<std::string, Item> _store_items;
-  Window _window;
-  std::map<double, std::string> _messages;
+
+  static constexpr std::size_t buf_size{32};
+  std::array<char, buf_size> _name_buf{};
+  std::array<char, buf_size> _message_input_buf{};
 };
 
 [[nodiscard]] auto connect(asio::io_context &io_context, std::string_view host,

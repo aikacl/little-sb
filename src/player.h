@@ -9,7 +9,7 @@ using Player_ptr = std::shared_ptr<Player>;
 
 class Player {
 public:
-  // Don't use this. This is for json creation.
+  // Don't use this because it is here for json creation.
   Player();
 
   Player(std::string name, int health, std::pair<int, int> damage_range,
