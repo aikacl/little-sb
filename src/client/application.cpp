@@ -136,7 +136,7 @@ void Application::show_user_info()
   _window.text(std::format("Your health: {}", _you->health()));
   _window.text(std::format("Your damage range: {}", _you->damage_range()));
   _window.text(
-      std::format("Your critical hit rate: {:5}", _you->critical_hit_rate()));
+      std::format("Your critical hit rate: {:3}", _you->critical_hit_rate()));
   _window.text(std::format("Your defense: {}", _you->defense()));
   _window.text(std::format("Your money left: {}", _you->money()));
 }
@@ -317,7 +317,7 @@ void Application::async_request(Command const &command,
                                 std::function<void(Event)> on_replied)
 {
   spdlog::debug("Scheduling request: {}", command.dump());
-  Packet packet{Packet_sender{_name, _name}, command.dump()};
+  Packet packet{Packet::Sender{_name, _name}, command.dump()};
   _session->schedule_request(
       std::move(packet), [on_replied{std::move(on_replied)}](Packet packet) {
         on_replied(Event{json::parse(std::move(packet.payload))});

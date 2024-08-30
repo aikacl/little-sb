@@ -26,8 +26,8 @@ private:
 
   // @return
   //  Result_type
-  auto handle_player_command(std::string const &player,
-                             Command const &command) -> Event;
+  auto handle_command(std::string const &player,
+                      Command const &command) -> Event;
 
   Server *_server;
   Session_repository _session_repo;

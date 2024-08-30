@@ -52,22 +52,22 @@ auto Session_service::on_reading_packet(Packet packet) -> Packet
   if (packet.protocol != Packet::this_protocol_name) {
     spdlog::warn("Packet protocol is different from ours: {}", packet.protocol);
     json reply("Protocol error: {} used.");
-    return Packet{Packet_sender{"Server", "Server"}, reply.dump()};
+    return Packet{Packet::Sender{"Server", "Server"}, reply.dump()};
   }
 
   if (!_server->verify_userinfo(packet.sender)) {
-    return Packet{Packet_sender{_name, _name},
+    return Packet{Packet::Sender{_name, _name},
                   json("Wrong username or password.").dump()};
   }
 
   // We must consider sign-ups, but for now just ignore it.
   Command const player_command{json::parse(std::move(packet.payload))};
-  auto reply{handle_player_command(packet.sender.username(), player_command)};
-  return Packet{Packet_sender{_name, _name}, reply.dump()};
+  auto const reply{handle_command(packet.sender.username(), player_command)};
+  return Packet{Packet::Sender{_name, _name}, reply.dump()};
 }
 
-auto Session_service::handle_player_command(std::string const &player_name,
-                                            Command const &command) -> Event
+auto Session_service::handle_command(std::string const &player_name,
+                                     Command const &command) -> Event
 {
   spdlog::trace("Handling player's command");
 

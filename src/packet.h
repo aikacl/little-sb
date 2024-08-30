@@ -5,22 +5,21 @@
 #include <string_view>
 
 using nlohmann::json;
-using Packet_sender = User_info;
 
 // This class should only contains POD (plain old data).
 struct Packet {
+  using Sender = User_info;
   static constexpr std::string_view this_protocol_name{"sbp"};
 
   Packet() = default;
 
-  Packet(Packet_sender sender, std::string payload = "")
+  Packet(Sender sender, std::string payload)
       : sender{std::move(sender)}, payload{std::move(payload)}
   {
   }
 
-  // Header
   std::string protocol{this_protocol_name};
-  Packet_sender sender{"Undefined username", "Undefined password"};
+  Sender sender{"Undefined username", "Undefined password"};
   std::string payload{"Undefined body"};
 
   NLOHMANN_DEFINE_TYPE_INTRUSIVE(Packet, protocol, sender, payload)
