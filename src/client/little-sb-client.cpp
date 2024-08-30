@@ -9,12 +9,16 @@ auto main(int argc, char **argv) -> int
   Window::initialize();
 
 #ifdef NDEBUG
-  // The same as server
+  // The same as server, to trace the throwing source code.
   try {
 #endif
-    constexpr std::string_view remote_host{"154.7.177.38"};
-    constexpr std::string_view local_host{"localhost"};
-    Application app{argc == 1 ? remote_host : local_host, 1438};
+    constexpr auto remote_host{"154.7.177.38"sv};
+    constexpr auto local_host{"localhost"sv};
+    constexpr auto port{"1438"sv};
+    Application app{argc == 2 && std::strcmp(argv[1], "local") == 0
+                        ? local_host
+                        : remote_host,
+                    port};
     app.run();
 #ifdef NDEBUG
   }

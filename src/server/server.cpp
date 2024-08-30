@@ -65,7 +65,8 @@ void Server::remove_player(std::string const &player_name)
   _players.extract(player_name);
 }
 
-auto Server::allocate_game(std::array<Player *, 2> players) -> Game &
+auto Server::allocate_game(std::array<player_stuff::Player *, 2> players)
+    -> Game &
 {
   auto const id{_games.empty() ? std::uint64_t{} : _games.rbegin()->first + 1};
   return _games.insert({id, Game{id, players, &_session_service}})
@@ -91,7 +92,7 @@ void Server::run_main_game_loop()
   spdlog::info("Main game loop over");
 }
 
-auto Server::verify_userinfo(Packet_sender const &user) const -> bool
+auto Server::verify_userinfo(Packet::Sender const &user) const -> bool
 {
   // TODO(ShelpAm): replace this placeholder implementation.
   return user.username() == user.password();

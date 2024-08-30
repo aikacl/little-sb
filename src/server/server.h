@@ -8,7 +8,9 @@
 
 class Game;
 class Command;
+namespace player_stuff {
 class Player;
+}
 struct Packet;
 class Server_command_executor;
 
@@ -30,14 +32,14 @@ private:
   void
   register_command_executor(std::unique_ptr<Server_command_executor> executor);
   void remove_player(std::string const &player_name);
-  auto allocate_game(std::array<Player *, 2> players) -> Game &;
+  auto allocate_game(std::array<player_stuff::Player *, 2> players) -> Game &;
   void run_main_game_loop();
-  auto verify_userinfo(Packet_sender const &user) const -> bool;
+  auto verify_userinfo(Packet::Sender const &user) const -> bool;
 
   std::atomic<bool> _main_game_loop_should_stop;
   std::map<std::uint64_t, Game> _games;
   std::map<std::string, Item> _store_items;
-  std::map<std::string, Player> _players;
+  std::map<std::string, player_stuff::Player> _players;
   std::map<std::string, std::unique_ptr<Server_command_executor>>
       _server_commands;
 

@@ -7,7 +7,7 @@
 
 class Game {
 public:
-  Game(std::uint64_t const id, std::array<Player *, 2> players,
+  Game(std::uint64_t const id, std::array<player_stuff::Player *, 2> players,
        Session_service *session_service)
       : _id{id}, _players{players}, _session_service{session_service},
         _last_tick{std::chrono::steady_clock::now()}
@@ -69,7 +69,8 @@ public:
 private:
   std::size_t _id;
   std::queue<std::string> _pending_events;
-  std::array<Player *, 2> _players; // First sender, second receiver
+  std::array<player_stuff::Player *, 2>
+      _players; // First sender, second receiver
   Session_service *_session_service;
   bool _ended{};
   int _turn{};

@@ -19,7 +19,7 @@ class Application {
   };
 
 public:
-  Application(std::string_view host, std::uint16_t port);
+  Application(std::string_view host, std::string_view port);
   void run();
 
 private:
@@ -49,10 +49,10 @@ private:
 
   Window _window;
 
-  Player_ptr _you;
+  player_stuff::Player_ptr _you;
   std::size_t _game_id{};
   std::map<double, std::string> _messages;
-  std::map<std::string, Player> _players;
+  std::map<std::string, player_stuff::Player> _players;
   std::map<std::string, Item> _store_items;
 
   static constexpr std::size_t buf_size{32};
@@ -61,4 +61,4 @@ private:
 };
 
 [[nodiscard]] auto connect(asio::io_context &io_context, std::string_view host,
-                           std::uint16_t port) -> tcp::socket;
+                           std::string_view port) -> tcp::socket;

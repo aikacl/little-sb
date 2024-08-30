@@ -6,7 +6,7 @@
 #include "server-command-executor.h"
 #include "server.h"
 
-Session_service::Session_service(Server *server, std::uint16_t const port,
+Session_service::Session_service(Server *server, std::uint16_t port,
                                  std::string name)
     : _server{server},
       _session_repo{server->io_context(), port,
@@ -74,14 +74,8 @@ auto Session_service::handle_command(std::string const &player_name,
   // We create new information if the player instance doesn't exist. So here the
   // player should be existing.
   if (!_server->_players.contains(player_name)) {
-    _server->_players.insert(
-        {player_name, Player{player_name,
-                             little_sb::random::uniform(20, 25),
-                             {3, little_sb::random::uniform(3, 7)},
-                             little_sb::random::uniform(1, 5),
-                             20}});
-    _server->_players.at(player_name)
-        .critical_hit_rate(little_sb::random::uniform(0.15, 0.2));
+    player_stuff::Classic_builder builder{player_name};
+    _server->_players.insert({player_name, builder.build()});
   }
 
   auto &player{_server->_players.at(player_name)};

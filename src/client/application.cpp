@@ -6,7 +6,7 @@
 #include <asio.hpp>
 #include <cassert>
 
-Application::Application(std::string_view const host, std::uint16_t const port)
+Application::Application(std::string_view host, std::string_view port)
     : _session{std::make_shared<Session>(connect(_io_context, host, port))}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
@@ -49,7 +49,8 @@ void Application::update()
 
   if (_you) {
     async_request(Command{"sync"}, [this](Event const &e) {
-      _you = std::make_shared<Player>(e.get_arg<Player>(0));
+      _you = std::make_shared<player_stuff::Player>(
+          e.get_arg<player_stuff::Player>(0));
     });
   }
 
@@ -65,7 +66,7 @@ void Application::update()
         return;
       }
 
-      _players = e.get_arg<std::map<std::string, Player>>(0);
+      _players = e.get_arg<std::map<std::string, player_stuff::Player>>(0);
       spdlog::debug("Players: {}", json(_players).dump());
     });
   }
@@ -90,7 +91,8 @@ void Application::render()
         if (e.name() != "ok") {
           assert(false);
         }
-        _you = std::make_shared<Player>(e.get_arg<Player>(0));
+        _you = std::make_shared<player_stuff::Player>(
+            e.get_arg<player_stuff::Player>(0));
         schedule_continuous_query_event();
         _state = State::greeting;
       });
@@ -309,8 +311,8 @@ void Application::process_event(Event const &event)
 
 void Application::add_to_show(std::string message)
 {
-  constexpr double deferred{10};
-  _messages.insert({glfwGetTime() + deferred, std::move(message)});
+  constexpr double time_elapsed{10};
+  _messages.insert({glfwGetTime() + time_elapsed, std::move(message)});
 }
 
 void Application::async_request(Command const &command,
@@ -324,23 +326,23 @@ void Application::async_request(Command const &command,
       });
 }
 
-auto connect(asio::io_context &io_context, std::string_view host,
-             std::uint16_t port) -> tcp::socket
-{
-  spdlog::trace("Call {}", std::source_location::current().function_name());
-
-  tcp::socket socket{io_context};
-  auto endpoints{tcp::resolver{io_context}.resolve(host, std::to_string(port))};
-  std::error_code ec;
-  asio::connect(socket, endpoints, ec);
-  handle_error(ec);
-  return socket;
-}
-
 void Application::schedule_continuous_query_event()
 {
   async_request(Command{"query-event"}, [this](Event const &event) {
     process_event(event);
     schedule_continuous_query_event();
   });
+}
+
+auto connect(asio::io_context &io_context, std::string_view host,
+             std::string_view port) -> tcp::socket
+{
+  spdlog::trace("Call {}", std::source_location::current().function_name());
+
+  tcp::socket socket{io_context};
+  auto endpoints{tcp::resolver{io_context}.resolve(host, port)};
+  std::error_code ec;
+  asio::connect(socket, endpoints, ec);
+  handle_error(ec);
+  return socket;
 }
