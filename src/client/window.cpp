@@ -35,7 +35,7 @@ void Window::deinitialize()
 }
 
 Window::Window()
-    : _window{glfwCreateWindow(640, 480, "Little sb", nullptr, nullptr)}
+    : _window{glfwCreateWindow(1440, 960, "Little sb", nullptr, nullptr)}
 {
   if (_window == nullptr) {
     throw "Window or OpenGL context creation failed";
@@ -93,15 +93,17 @@ void Window::poll_events() const
   // ImGui::ShowDemoWindow(); // Show demo window! :)
 }
 
-auto Window::button(std::string const &label) -> bool
+auto Window::button(std::string const &label, float scale) -> bool
 {
   use();
+  ImGui::SetWindowFontScale(scale);
   return ImGui::Button(label.c_str());
 }
 
-void Window::text(std::string const &text)
+void Window::text(std::string const &text, float scale) const
 {
   use();
+  ImGui::SetWindowFontScale(scale);
   ImGui::Text("%s", text.c_str());
 }
 

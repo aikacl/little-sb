@@ -2,7 +2,7 @@
 
 #include "command.h"
 #include "event.h"
-#include "item.h"
+#include "item/item.h"
 #include "player.h"
 #include "session.h"
 #include "window.h"
@@ -13,7 +13,7 @@ class Application {
     logging,
     greeting,
     starting_battle,
-    running,
+    battling,
     ended,
     should_stop,
   };
@@ -31,8 +31,8 @@ private:
   void render();
   void show_user_info();
   void handle_greeting();
-  void handle_starting();
-  void handle_running();
+  void handle_starting_battle();
+  void handle_battling();
   void handle_ended();
   void starting_new_game();
 
@@ -49,11 +49,14 @@ private:
 
   Window _window;
 
-  player_stuff::Player_ptr _you;
+  player::Player_ptr _you;
+
   std::size_t _game_id{};
+  std::size_t _rounds{};
+
   std::map<double, std::string> _messages;
-  std::map<std::string, player_stuff::Player> _players;
-  std::map<std::string, Item> _store_items;
+  std::map<std::string, player::Player> _players;
+  std::map<std::string, item::Item_info> _store_items;
 
   static constexpr std::size_t buf_size{32};
   std::array<char, buf_size> _name_buf{};

@@ -2,6 +2,7 @@
 #include "event.h"
 #include "handle-error.h"
 #include "imgui.h"
+#include "item/item.h"
 #include "player.h"
 #include <asio.hpp>
 #include <cassert>
@@ -14,11 +15,13 @@ Application::Application(std::string_view host, std::string_view port)
 
 void Application::run()
 {
-  spdlog::trace("Call {}", std::source_location::current().function_name());
+  spdlog::info("Application started");
 
   while (!should_stop()) {
     tick();
   }
+
+  spdlog::info("Application stopped");
 }
 
 auto Application::should_stop() const -> bool
@@ -36,6 +39,7 @@ void Application::tick()
 
 void Application::poll_events()
 {
+  // TODO(shelpam): comment needed–why should we restart here?
   _io_context.poll();
   if (_io_context.stopped()) {
     _io_context.restart();
@@ -49,14 +53,13 @@ void Application::update()
 
   if (_you) {
     async_request(Command{"sync"}, [this](Event const &e) {
-      _you = std::make_shared<player_stuff::Player>(
-          e.get_arg<player_stuff::Player>(0));
+      _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
     });
   }
 
   if (_state == State::greeting) {
     async_request(Command{"list-store-items"}, [this](Event const &e) {
-      _store_items = e.get_arg<std::map<std::string, Item>>(0);
+      _store_items = e.get_arg<std::map<std::string, item::Item_info>>(0);
     });
   }
   else if (_state == State::starting_battle) {
@@ -66,7 +69,7 @@ void Application::update()
         return;
       }
 
-      _players = e.get_arg<std::map<std::string, player_stuff::Player>>(0);
+      _players = e.get_arg<std::map<std::string, player::Player>>(0);
       spdlog::debug("Players: {}", json(_players).dump());
     });
   }
@@ -74,6 +77,8 @@ void Application::update()
 
 void Application::render()
 {
+  ImGui::Begin("Player info");
+
   if (_you) {
     show_user_info();
   }
@@ -91,8 +96,7 @@ void Application::render()
         if (e.name() != "ok") {
           assert(false);
         }
-        _you = std::make_shared<player_stuff::Player>(
-            e.get_arg<player_stuff::Player>(0));
+        _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
         schedule_continuous_query_event();
         _state = State::greeting;
       });
@@ -106,10 +110,10 @@ void Application::render()
     handle_greeting();
     break;
   case State::starting_battle:
-    handle_starting();
+    handle_starting_battle();
     break;
-  case State::running:
-    handle_running();
+  case State::battling:
+    handle_battling();
     break;
   case State::ended:
     handle_ended();
@@ -129,6 +133,8 @@ void Application::render()
     }
   }
 
+  ImGui::End();
+
   _window.render();
 }
 
@@ -136,11 +142,17 @@ void Application::show_user_info()
 {
   _window.text(std::format("Your name: {}", _you->name()));
   _window.text(std::format("Your health: {}", _you->health()));
-  _window.text(std::format("Your damage range: {}", _you->damage_range()));
+  _window.text(std::format("Your damage range: {}, {}",
+                           _you->damage_range().first,
+                           _you->damage_range().second));
   _window.text(
-      std::format("Your critical hit rate: {:3}", _you->critical_hit_rate()));
+      std::format("Your critical hit rate: {:.3}", _you->critical_hit_rate()));
   _window.text(std::format("Your defense: {}", _you->defense()));
   _window.text(std::format("Your money left: {}", _you->money()));
+  _window.text(std::format("Your position: ({}, {})", _you->position().x,
+                           _you->position().y));
+
+  // TODO(shelpam): show game map here
 }
 
 void Application::handle_greeting()
@@ -191,7 +203,7 @@ void Application::handle_greeting()
   }
 }
 
-void Application::handle_starting()
+void Application::handle_starting_battle()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
@@ -200,7 +212,24 @@ void Application::handle_starting()
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }
 
-void Application::handle_running() {}
+void Application::handle_battling()
+{
+  if (_rounds >= 6) {
+    if (_window.button("Escape from the battle")) {
+      _rounds = 0;
+      Command escape{"escape"};
+      escape.set_param("game-id", _game_id);
+      async_request(escape, [this](Event const &e) {
+        if (e.name() != "ok") {
+          add_to_show(e.get_arg<std::string>(0));
+          return;
+        }
+        add_to_show("You have escaped from the game.");
+        _state = State::ended;
+      });
+    }
+  }
+}
 
 void Application::handle_ended()
 {
@@ -224,14 +253,18 @@ void Application::starting_new_game()
   if (_window.button("Go back")) {
     _state = State::greeting;
   }
+  _window.text("(Note: only players visible to you are shown.)");
   for (auto const &[_, player] : _players) {
+    if (!_you->can_see(player)) {
+      continue;
+    }
     if (_window.button(player.name())) {
       Command battle{"battle"};
       battle.add_arg(player.name());
       async_request(battle, [this](Event const &e) {
         if (e.name() == "ok") {
           _game_id = e.get_param<std::size_t>("game-id");
-          _state = State::running;
+          _state = State::battling;
           add_to_show("Game started.");
         }
         else if (e.name() == "error") {
@@ -279,6 +312,7 @@ void Application::process_event(Event const &event)
     if (who == _you->name()) {
       _you->take_damage(drop);
     }
+    ++_rounds;
   }
   else if (event.name() == "game-end") {
     add_to_show("Game ended.");

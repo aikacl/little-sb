@@ -1,8 +1,7 @@
 #include "session-service.h"
+#include "battle.h"
 #include "command.h"
-#include "game.h"
 #include "packet.h"
-#include "random.h"
 #include "server-command-executor.h"
 #include "server.h"
 
@@ -74,7 +73,7 @@ auto Session_service::handle_command(std::string const &player_name,
   // We create new information if the player instance doesn't exist. So here the
   // player should be existing.
   if (!_server->_players.contains(player_name)) {
-    player_stuff::Classic_builder builder{player_name};
+    player::Classic_builder builder{player_name};
     _server->_players.insert({player_name, builder.build()});
   }
 
@@ -84,7 +83,7 @@ auto Session_service::handle_command(std::string const &player_name,
   if (command.name() == "login") {
     spdlog::info("{} logged in", player_name);
     Event e{"ok"};
-    e.add_arg(_server->_players[player_name]);
+    e.add_arg(player);
     return e;
   }
 

@@ -2,12 +2,12 @@
 
 #include "command.h"
 #include "server/session-repository.h"
+#include <event.h>
 #include <map>
 #include <queue>
 
 class Command;
 class Server;
-using Event = Command;
 
 // Controls all stuff related to sending/receiving packets, ensuring that the
 // packets arrive at destination without coalescing.
@@ -26,8 +26,8 @@ private:
 
   // @return
   //  Result_type
-  auto handle_command(std::string const &player,
-                      Command const &command) -> Event;
+  auto handle_command(std::string const &player, Command const &command)
+      -> Event;
 
   Server *_server;
   Session_repository _session_repo;

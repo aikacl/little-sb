@@ -1,6 +1,6 @@
 #include "server-command-executor.h"
+#include "battle.h"
 #include "command.h"
-#include "game.h"
 #include "server.h"
 
 Server_command_executor::Server_command_executor(Server *server)
@@ -82,4 +82,22 @@ auto Fuck_server_command_executor::execute(std::string from,
 constexpr auto Fuck_server_command_executor::name() -> std::string
 {
   return "fuck";
+}
+
+Escape_server_command_executor::Escape_server_command_executor(Server *server)
+    : Server_command_executor{server}
+{
+}
+
+auto Escape_server_command_executor::execute(std::string /* from */,
+                                             Command const &command) -> Event
+{
+  auto const game_id{command.get_param<std::size_t>("game-id")};
+  server()->_games.at(game_id).stop(Stop_cause::escaping);
+  return Event{"ok"};
+}
+
+constexpr auto Escape_server_command_executor::name() -> std::string
+{
+  return "escape";
 }

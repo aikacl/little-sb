@@ -1,11 +1,11 @@
 #include "server/server.h"
-#include "game.h"
+#include "battle.h"
 #include "player.h"
 #include "server/server-command-executor.h"
 #include <source_location>
 #include <spdlog/spdlog.h>
 
-auto Server::instance(std::uint16_t const bind_port) -> Server &
+auto Server::instance(std::uint16_t bind_port) -> Server &
 {
   static Server the_instance{bind_port};
   return the_instance;
@@ -34,8 +34,10 @@ auto Server::io_context() -> asio::io_context &
   return _io_context;
 }
 
-Server::Server(std::uint16_t const bind_port)
-    : _store_items{{"First aid kit", Item{.name{"First aid kit"}, .price = 3}}},
+Server::Server(std::uint16_t bind_port)
+    : _game_map{10, 20},
+      _store_items{{"First aid kit",
+                    item::Item_info{.name{"First aid kit"}, .price = 3}}},
       _session_service(this, bind_port, "Server")
 {
   register_command_executor(
@@ -44,6 +46,8 @@ Server::Server(std::uint16_t const bind_port)
   //     std::make_unique<Query_event_server_command_executor>(this));
   register_command_executor(
       std::make_unique<Fuck_server_command_executor>(this));
+  register_command_executor(
+      std::make_unique<Escape_server_command_executor>(this));
 }
 
 void Server::register_command_executor(
@@ -54,8 +58,8 @@ void Server::register_command_executor(
 
 constexpr auto Server::tick_interval()
 {
-  return std::chrono::milliseconds{std::chrono::seconds{1}} /
-         max_tick_per_second;
+  using namespace std::chrono_literals;
+  return 1000ms / max_tick_per_second;
 }
 
 void Server::remove_player(std::string const &player_name)
@@ -65,11 +69,10 @@ void Server::remove_player(std::string const &player_name)
   _players.extract(player_name);
 }
 
-auto Server::allocate_game(std::array<player_stuff::Player *, 2> players)
-    -> Game &
+auto Server::allocate_game(std::array<player::Player *, 2> players) -> Battle &
 {
   auto const id{_games.empty() ? std::uint64_t{} : _games.rbegin()->first + 1};
-  return _games.insert({id, Game{id, players, &_session_service}})
+  return _games.try_emplace(id, Battle{id, players, &_session_service})
       .first->second;
 }
 
@@ -81,10 +84,12 @@ void Server::run_main_game_loop()
   while (!_main_game_loop_should_stop) {
     _io_context.poll();
 
-    if (std::chrono::steady_clock::now() >= last_update + tick_interval()) {
-      for (auto &[id, game] : _games) {
-        game.tick();
+    if (auto const now{std::chrono::steady_clock::now()};
+        now >= last_update + tick_interval()) {
+      for (auto &[_, game] : _games) {
+        game.update(now - last_update);
       }
+
       last_update = std::chrono::steady_clock::now();
     }
   }
