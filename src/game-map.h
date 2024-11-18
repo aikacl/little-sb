@@ -6,6 +6,7 @@
 
 class Game_map {
 public:
+  Game_map() = default; // Provided to construct json. Make them happy.
   Game_map(std::size_t height, std::size_t width);
 
 private:

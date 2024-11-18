@@ -53,13 +53,13 @@ Server::Server(std::uint16_t bind_port)
 void Server::register_command_executor(
     std::unique_ptr<Server_command_executor> executor)
 {
-  _server_commands.insert({executor->name(), std::move(executor)});
+  _server_commands.emplace(executor->name(), std::move(executor));
 }
 
 constexpr auto Server::tick_interval()
 {
   using namespace std::chrono_literals;
-  return 1000ms / max_tick_per_second;
+  return static_cast<std::chrono::nanoseconds>(1s) / max_tick_per_second;
 }
 
 void Server::remove_player(std::string const &player_name)

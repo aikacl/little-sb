@@ -131,6 +131,11 @@ auto Session_service::handle_command(std::string const &player_name,
     }
     return Event{"ok"};
   }
+  if (command.name() == "get-game-map") {
+    Event e{"ok"};
+    e.add_arg(_server->_game_map);
+    return e;
+  }
   if (command.name() == "list-store-items") {
     Event e{"ok"};
     e.add_arg(_server->_store_items);

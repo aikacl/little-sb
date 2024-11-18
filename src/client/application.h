@@ -2,6 +2,7 @@
 
 #include "command.h"
 #include "event.h"
+#include "game-map.h"
 #include "item/item.h"
 #include "player.h"
 #include "session.h"
@@ -51,8 +52,10 @@ private:
 
   player::Player_ptr _you;
 
-  std::size_t _game_id{};
-  std::size_t _rounds{};
+  std::size_t _battle_id{};
+  std::size_t _battled_rounds{};
+
+  std::shared_ptr<Game_map> _game_map;
 
   std::map<double, std::string> _messages;
   std::map<std::string, player::Player> _players;

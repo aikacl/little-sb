@@ -57,12 +57,17 @@ void Application::update()
     });
   }
 
-  if (_state == State::greeting) {
+  switch (_state) {
+  case State::greeting: {
     async_request(Command{"list-store-items"}, [this](Event const &e) {
       _store_items = e.get_arg<std::map<std::string, item::Item_info>>(0);
     });
+    async_request(Command{"get-game-map"}, [this](Event const &e) {
+      _game_map = std::make_shared<Game_map>(e.get_arg<Game_map>(0));
+    });
+    break;
   }
-  else if (_state == State::starting_battle) {
+  case State::starting_battle: {
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
         spdlog::warn("list-players returns {}, which is impossible.", e.name());
@@ -72,6 +77,9 @@ void Application::update()
       _players = e.get_arg<std::map<std::string, player::Player>>(0);
       spdlog::debug("Players: {}", json(_players).dump());
     });
+    break;
+  }
+  default:
   }
 }
 
@@ -214,11 +222,11 @@ void Application::handle_starting_battle()
 
 void Application::handle_battling()
 {
-  if (_rounds >= 6) {
+  if (_battled_rounds >= 6) {
     if (_window.button("Escape from the battle")) {
-      _rounds = 0;
+      _battled_rounds = 0;
       Command escape{"escape"};
-      escape.set_param("game-id", _game_id);
+      escape.set_param("game-id", _battle_id);
       async_request(escape, [this](Event const &e) {
         if (e.name() != "ok") {
           add_to_show(e.get_arg<std::string>(0));
@@ -263,7 +271,7 @@ void Application::starting_new_game()
       battle.add_arg(player.name());
       async_request(battle, [this](Event const &e) {
         if (e.name() == "ok") {
-          _game_id = e.get_param<std::size_t>("game-id");
+          _battle_id = e.get_param<std::size_t>("game-id");
           _state = State::battling;
           add_to_show("Game started.");
         }
@@ -312,7 +320,7 @@ void Application::process_event(Event const &event)
     if (who == _you->name()) {
       _you->take_damage(drop);
     }
-    ++_rounds;
+    ++_battled_rounds;
   }
   else if (event.name() == "game-end") {
     add_to_show("Game ended.");
