@@ -71,9 +71,9 @@ void Application::update()
         spdlog::warn("list-players returns {}, which is impossible.", e.name());
         return;
       }
-
-  default:
-    break;
+      _players = e.get_arg<std::map<std::string, player::Player>>(0);
+      spdlog::debug("Players: {}", json(_players).dump());
+    });
   default:
     break;
   }
