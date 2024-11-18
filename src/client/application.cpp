@@ -58,7 +58,7 @@ void Application::update()
   }
 
   switch (_state) {
-  case State::greeting: {
+  case State::greeting:
     async_request(Command{"list-store-items"}, [this](Event const &e) {
       _store_items = e.get_arg<std::map<std::string, item::Item_info>>(0);
     });
@@ -66,8 +66,7 @@ void Application::update()
       _game_map = std::make_shared<Game_map>(e.get_arg<Game_map>(0));
     });
     break;
-  }
-  case State::starting_battle: {
+  case State::starting_battle:
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
         spdlog::warn("list-players returns {}, which is impossible.", e.name());
@@ -78,8 +77,8 @@ void Application::update()
       spdlog::debug("Players: {}", json(_players).dump());
     });
     break;
-  }
   default:
+    break;
   }
 }
 
