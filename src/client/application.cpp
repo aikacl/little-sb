@@ -7,8 +7,7 @@
 #include <asio.hpp>
 #include <cassert>
 
-Application::Application(std::string_view host, std::string_view port)
-    : _session{std::make_shared<Session>(connect(_io_context, host, port))}
+Application::Application()
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -73,9 +72,7 @@ void Application::update()
         return;
       }
 
-      _players = e.get_arg<std::map<std::string, player::Player>>(0);
-      spdlog::debug("Players: {}", json(_players).dump());
-    });
+  default:
     break;
   default:
     break;
@@ -94,11 +91,14 @@ void Application::render()
   case State::unlogged_in:
     ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
     _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
+    ImGui::InputText("Server host", _host_buf.data(), _host_buf.size());
     if (_window.button("Login")) {
       if (_name.empty()) {
         add_to_show("error: Your name can not be empty. Please retry.");
         return;
       }
+      _session = std::make_shared<Session>(
+          connect(_io_context, std::string_view{_host_buf}, "1438"));
       async_request(Command{"login"}, [this](Event const &e) {
         if (e.name() != "ok") {
           assert(false);

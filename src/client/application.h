@@ -20,7 +20,7 @@ class Application {
   };
 
 public:
-  Application(std::string_view host, std::string_view port);
+  Application();
   void run();
 
 private:
@@ -63,6 +63,7 @@ private:
 
   static constexpr std::size_t buf_size{32};
   std::array<char, buf_size> _name_buf{};
+  std::array<char, buf_size> _host_buf{"localhost"};
   std::array<char, buf_size> _message_input_buf{};
 };
 

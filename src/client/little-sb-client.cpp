@@ -4,6 +4,15 @@
 
 auto main(int argc, char **argv) -> int
 {
+  if (argc == 0) {
+    std::abort();
+  }
+
+  if (argc != 1) {
+    spdlog::error("Usage: {}   (no any argument)", *argv);
+    return 1;
+  }
+
   spdlog::set_level(spdlog::level::info);
   Window::initialize();
 
@@ -11,13 +20,9 @@ auto main(int argc, char **argv) -> int
   // The same as server, to trace the throwing source code.
   try {
 #endif
-    constexpr auto remote_host{"154.7.177.38"sv};
-    constexpr auto local_host{"localhost"sv};
-    constexpr auto port{"1438"sv};
-    Application app{argc == 2 && std::strcmp(argv[1], "local") == 0
-                        ? local_host
-                        : remote_host,
-                    port};
+    // constexpr auto remote_host{"154.7.177.38"sv};
+    // constexpr auto local_host{"localhost"sv};
+    Application app;
     app.run();
 #ifdef NDEBUG
   }
