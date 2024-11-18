@@ -242,13 +242,7 @@ void Application::handle_ended()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
-  _window.text("Continue?");
-  if (_window.button("Yes")) {
-    _state = State::starting_battle;
-  }
-  if (_window.button("No")) {
-    _state = State::greeting;
-  }
+  _state = State::greeting;
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
 }

@@ -68,7 +68,7 @@ void Battle::stop(Stop_cause cause)
   }
   case Stop_cause::escaping: {
     Event message{"message"};
-    message.add_arg("Your opponent has escaped from the game.");
+    message.add_arg("Your opponent has escaped from the battle.");
     _session_service->push_event(_players[1]->name(), message);
     break;
   }
