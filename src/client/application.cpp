@@ -323,7 +323,8 @@ void Application::process_event(Event const &event)
 void Application::add_to_show(std::string message)
 {
   using namespace std::chrono_literals;
-  _messages.emplace(current_time() + 10s, std::move(message));
+  constexpr auto lasting_time{10s};
+  _messages.emplace(current_time() + lasting_time, std::move(message));
 }
 
 void Application::async_request(Command const &command,
@@ -394,12 +395,15 @@ void Application::render_unlogged_in()
       _state = State::logging;
     }
     catch (std::runtime_error const &e) {
-      if (e.what() == std::string_view{"Connection refused"}) {
-        add_to_show("Cannot connect to the server. Maybe server is down, or "
-                    "your input is incorrect.");
-        return;
+      if (e.what() == "Connection refused"sv) {
+        add_to_show("Cannot connect to the server. Connection refused.");
       }
-      throw;
+      else if (e.what() == "resolve: Host not found (authoritative)"sv) {
+        add_to_show(
+            "Cannot connect to the server. Host not found. Please check "
+            "whether the server is down, or you mistyped the host.");
+      }
+      spdlog::error(e.what());
     }
   }
 }

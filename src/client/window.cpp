@@ -35,7 +35,7 @@ void Window::deinitialize()
 }
 
 Window::Window()
-    : _window{glfwCreateWindow(1440, 960, "Little sb", nullptr, nullptr)}
+    : _window{glfwCreateWindow(1600, 1200, "Little sb", nullptr, nullptr)}
 {
   if (_window == nullptr) {
     throw "Window or OpenGL context creation failed";

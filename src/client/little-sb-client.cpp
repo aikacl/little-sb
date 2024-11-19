@@ -1,6 +1,6 @@
 #include "application.h"
+#include "log.h"
 #include "window.h"
-#include <spdlog/spdlog.h>
 
 auto main(int argc, char **argv) -> int
 {
@@ -13,7 +13,7 @@ auto main(int argc, char **argv) -> int
     return 1;
   }
 
-  spdlog::set_level(spdlog::level::info);
+  log_to_console_and_file();
   Window::initialize();
 
 #ifdef NDEBUG
