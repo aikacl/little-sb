@@ -1,11 +1,12 @@
 # Little-sb
+This is a real-time battling game.
 
 ## Architecture
 The project utilize C/S Architecture, thus consists of a client and a server.
 
 ## Prerequisite
 To prepare for the build process, you should install the following software:
-- [XMake](xmake.io)—builds the project
+- [XMake](https://xmake.io)—builds the project
 
 ## Build
 To build the project, simply run
