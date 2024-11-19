@@ -7,7 +7,7 @@
 #include <asio.hpp>
 #include <cassert>
 
-Application::Application()
+Application::Application() : _start_time{std::chrono::steady_clock::now()}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -77,6 +77,8 @@ void Application::update()
   default:
     break;
   }
+
+  remove_expired_messages();
 }
 
 void Application::render()
@@ -89,26 +91,7 @@ void Application::render()
 
   switch (_state) {
   case State::unlogged_in:
-    ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
-    _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
-    ImGui::InputText("Server host", _host_buf.data(), _host_buf.size());
-    if (_window.button("Login")) {
-      if (_name.empty()) {
-        add_to_show("error: Your name can not be empty. Please retry.");
-        return;
-      }
-      _session = std::make_shared<Session>(
-          connect(_io_context, std::string_view{_host_buf}, "1438"));
-      async_request(Command{"login"}, [this](Event const &e) {
-        if (e.name() != "ok") {
-          assert(false);
-        }
-        _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
-        schedule_continuous_query_event();
-        _state = State::greeting;
-      });
-      _state = State::logging;
-    }
+    render_unlogged_in();
     break;
   case State::logging:
     _window.text("Logging in...");
@@ -129,15 +112,8 @@ void Application::render()
     break;
   }
 
-  auto const now{glfwGetTime()};
-  for (auto it{_messages.begin()}; it != _messages.end();) {
-    if (it->first < now) {
-      it = _messages.erase(it);
-    }
-    else {
-      _window.text(it->second);
-      ++it;
-    }
+  for (auto const &msg : _messages) {
+    _window.text(msg.content);
   }
 
   ImGui::End();
@@ -223,7 +199,6 @@ void Application::handle_battling()
 {
   if (_battled_rounds >= 6) {
     if (_window.button("Escape from the battle")) {
-      _battled_rounds = 0;
       Command escape{"escape"};
       escape.set_param("game-id", _battle_id);
       async_request(escape, [this](Event const &e) {
@@ -231,7 +206,7 @@ void Application::handle_battling()
           add_to_show(e.get_arg<std::string>(0));
           return;
         }
-        add_to_show("You have escaped from the game.");
+        add_to_show("You have escaped from the battle.");
         _state = State::ended;
       });
     }
@@ -242,6 +217,7 @@ void Application::handle_ended()
 {
   spdlog::trace("Entering {}", std::source_location::current().function_name());
 
+  _battled_rounds = 0;
   _state = State::greeting;
 
   spdlog::trace("Leaving {}", std::source_location::current().function_name());
@@ -346,8 +322,8 @@ void Application::process_event(Event const &event)
 
 void Application::add_to_show(std::string message)
 {
-  constexpr double time_elapsed{10};
-  _messages.insert({glfwGetTime() + time_elapsed, std::move(message)});
+  using namespace std::chrono_literals;
+  _messages.emplace(current_time() + 10s, std::move(message));
 }
 
 void Application::async_request(Command const &command,
@@ -380,4 +356,50 @@ auto connect(asio::io_context &io_context, std::string_view host,
   asio::connect(socket, endpoints, ec);
   handle_error(ec);
   return socket;
+}
+auto Application::current_time() const -> Duration
+{
+  return std::chrono::steady_clock::now() - _start_time;
+}
+void Application::remove_expired_messages()
+{
+  auto const now{current_time()};
+  decltype(_messages.begin()) it{_messages.begin()};
+
+  while (!_messages.empty() && it->expiring_time < now) {
+    it = _messages.erase(it);
+  }
+}
+void Application::render_unlogged_in()
+{
+  ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
+  _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
+  ImGui::InputText("Server host", _host_buf.data(), _host_buf.size());
+  if (_window.button("Login")) {
+    if (_name.empty()) {
+      add_to_show("error: Your name can not be empty. Please retry.");
+      return;
+    }
+    try {
+      _session = std::make_shared<Session>(
+          connect(_io_context, std::string_view{_host_buf}, "1438"));
+      async_request(Command{"login"}, [this](Event const &e) {
+        if (e.name() != "ok") {
+          assert(false);
+        }
+        _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
+        schedule_continuous_query_event();
+        _state = State::greeting;
+      });
+      _state = State::logging;
+    }
+    catch (std::runtime_error const &e) {
+      if (e.what() == std::string_view{"Connection refused"}) {
+        add_to_show("Cannot connect to the server. Maybe server is down, or "
+                    "your input is incorrect.");
+        return;
+      }
+      throw;
+    }
+  }
 }

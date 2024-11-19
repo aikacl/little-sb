@@ -1,5 +1,6 @@
 #pragma once
 
+#include "client/message.h"
 #include "command.h"
 #include "event.h"
 #include "game-map.h"
@@ -7,6 +8,7 @@
 #include "player.h"
 #include "session.h"
 #include "window.h"
+#include <set>
 
 class Application {
   enum class State : std::uint8_t {
@@ -24,12 +26,18 @@ public:
   void run();
 
 private:
+  // Relative time, since start of the program. Like `glfwGetTime()`.
+  [[nodiscard]] auto current_time() const -> Duration;
+
   [[nodiscard]] auto should_stop() const -> bool;
   void schedule_continuous_query_event();
   void tick();
   void poll_events();
   void update();
+
   void render();
+  void render_unlogged_in();
+
   void show_user_info();
   void handle_greeting();
   void handle_starting_battle();
@@ -43,8 +51,13 @@ private:
   void async_request(Command const &command,
                      std::function<void(Event)> on_replied);
 
+  void remove_expired_messages();
+
   asio::io_context _io_context;
   Session_ptr _session;
+
+  Time_point _start_time;
+
   State _state{State::unlogged_in};
   std::string _name;
 
@@ -57,7 +70,7 @@ private:
 
   std::shared_ptr<Game_map> _game_map;
 
-  std::map<double, std::string> _messages;
+  std::set<Message> _messages;
   std::map<std::string, player::Player> _players;
   std::map<std::string, item::Item_info> _store_items;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "chrono.h"
 #include "player.h"
 #include "server/session-service.h"
 #include "tick.h"
@@ -13,7 +14,7 @@ public:
   Battle(std::uint64_t id, std::array<player::Player *, 2> players,
          Session_service *session_service);
 
-  void update(std::chrono::nanoseconds delta);
+  void update(Duration delta);
 
   void stop(Stop_cause cause);
 

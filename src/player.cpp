@@ -167,7 +167,7 @@ player::Classic_builder::Classic_builder(std::string player_name)
   defense(little_sb::random::uniform(20, 30));
   money(20);
   movement_volecity(1);
-  visual_range(10);
+  visual_range(15);
   position(
       {little_sb::random::uniform(0, 9), little_sb::random::uniform(0, 19)});
 }

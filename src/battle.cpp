@@ -1,4 +1,5 @@
 #include "battle.h"
+#include "chrono.h"
 
 Battle::Battle(std::size_t const id,
                std::array<player::Player *, 2> const players,
@@ -7,7 +8,7 @@ Battle::Battle(std::size_t const id,
 {
 }
 
-void Battle::update(std::chrono::nanoseconds delta)
+void Battle::update(Duration delta)
 {
   if (_ended) {
     return;
