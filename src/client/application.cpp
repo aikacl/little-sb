@@ -404,6 +404,7 @@ void Application::render_unlogged_in()
             "whether the server is down, or you mistyped the host.");
       }
       spdlog::error(e.what());
+      throw;
     }
   }
 }
