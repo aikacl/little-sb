@@ -112,32 +112,6 @@ void Application::render()
     break;
   }
 
-  ImGui::BeginChild("Scrolling");
-
-  // Since the scroll data will be updated in the next frame, so we should
-  // save last frame data, to update current frame scrolling position.
-  static bool was_at_bottom{};
-  static bool last_frame_new_message_arrived{};
-  static std::size_t last_messages_size{};
-
-  if (last_frame_new_message_arrived && was_at_bottom) {
-    // Scrolls down
-    ImGui::SetScrollY(ImGui::GetScrollMaxY());
-  }
-
-  for (auto const &msg : _messages) {
-    // In order to make the font size seems to be the same with outter text, and
-    // the actual font size is calculated by `outter-size * inner-scale`, we
-    // should set the second parameter `scale` to 1 here.
-    _window.text(msg.content, 1);
-  }
-
-  was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
-  last_frame_new_message_arrived = _messages.size() != last_messages_size;
-  last_messages_size = _messages.size();
-
-  ImGui::EndChild();
-
   ImGui::End();
 
   _window.render();
@@ -205,6 +179,39 @@ void Application::handle_greeting()
         }
       });
     }
+  }
+
+  
+  _window.text("");
+  _window.text("Messages:");
+  ImGui::BeginChild("Scrolling");
+
+  // Since the scroll data will be updated in the next frame, so we should
+  // save last frame data, to update current frame scrolling position.
+  static bool was_at_bottom{};
+  static bool last_frame_new_message_arrived{};
+  static std::size_t last_messages_size{};
+
+  if (last_frame_new_message_arrived && was_at_bottom) {
+    // Scrolls down
+    ImGui::SetScrollY(ImGui::GetScrollMaxY());
+  }
+
+  for (auto const &msg : _messages) {
+    // In order to make the font size seems to be the same with outter text, and
+    // the actual font size is calculated by `outter-size * inner-scale`, we
+    // should set the second parameter `scale` to 1 here.
+    _window.text(msg.content, 1);
+  }
+
+  was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
+  last_frame_new_message_arrived = _messages.size() != last_messages_size;
+  last_messages_size = _messages.size();
+
+  ImGui::EndChild();
+  
+  if(_window.button("Clear messages")){
+    _messages.clear();
   }
 }
 
