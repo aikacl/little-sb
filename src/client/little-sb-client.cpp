@@ -13,7 +13,8 @@ auto main(int argc, char **argv) -> int
     return 1;
   }
 
-  log_to_console_and_file(spdlog::level::warn, spdlog::level::trace);
+  log_to_console_and_file(spdlog::level::warn, "logs/client.log",
+                          spdlog::level::trace);
   Window::initialize();
 
 #ifdef NDEBUG

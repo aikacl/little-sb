@@ -5,13 +5,14 @@
 #include <spdlog/spdlog.h>
 
 void log_to_console_and_file(spdlog::level::level_enum console_level,
+                             std::string_view filename,
                              spdlog::level::level_enum file_level)
 {
   auto console_sink{std::make_shared<spdlog::sinks::stdout_color_sink_mt>()};
   console_sink->set_level(console_level);
 
-  auto file_sink{std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-      "logs/log.txt", true)};
+  auto file_sink{
+      std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true)};
   file_sink->set_level(file_level);
 
   auto logger{std::make_shared<spdlog::logger>(
