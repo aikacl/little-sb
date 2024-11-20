@@ -21,7 +21,7 @@ auto main(int argc, char **argv) -> int
 
   // Signal handler for SIGINT
   std::signal(SIGINT, signal_handler);
-  log_to_console_and_file(spdlog::level::info, "logs/client.log",
+  log_to_console_and_file(spdlog::level::info, "logs/server.log",
                           spdlog::level::trace);
 
 #ifdef NDEBUG
@@ -33,8 +33,9 @@ auto main(int argc, char **argv) -> int
     Server::instance(1438).run();
 #ifdef NDEBUG
   }
-  catch (std::exception &e) {
+  catch (std::exception const &e) {
     spdlog::critical("Exception: {}", e.what());
+    spdlog::dump_backtrace();
   }
 #endif
 
