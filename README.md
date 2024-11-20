@@ -40,6 +40,7 @@ To develop the project in an IDE other than xmake, use the following commands:
 - CMake: `xmake project -k cmake`.
 - Make: `xmake project -k make`.
 - Ninja: `xmake project -k ninja`.
+- compile_commands.json: `xmake project -k compile_commands`.
 
 For more information on available options, use the following command:
 ```bash
