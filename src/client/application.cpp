@@ -112,9 +112,31 @@ void Application::render()
     break;
   }
 
-  for (auto const &msg : _messages) {
-    _window.text(msg.content);
+  ImGui::BeginChild("Scrolling");
+
+  // Since the scroll data will be updated in the next frame, so we should
+  // save last frame data, to update current frame scrolling position.
+  static bool was_at_bottom{};
+  static bool last_frame_new_message_arrived{};
+  static std::size_t last_messages_size{};
+
+  if (last_frame_new_message_arrived && was_at_bottom) {
+    // Scrolls down
+    ImGui::SetScrollY(ImGui::GetScrollMaxY());
   }
+
+  for (auto const &msg : _messages) {
+    // In order to make the font size seems to be the same with outter text, and
+    // the actual font size is calculated by `outter-size * inner-scale`, we
+    // should set the second parameter `scale` to 1 here.
+    _window.text(msg.content, 1);
+  }
+
+  was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
+  last_frame_new_message_arrived = _messages.size() != last_messages_size;
+  last_messages_size = _messages.size();
+
+  ImGui::EndChild();
 
   ImGui::End();
 
@@ -323,8 +345,8 @@ void Application::process_event(Event const &event)
 void Application::add_to_show(std::string message)
 {
   using namespace std::chrono_literals;
-  constexpr auto lasting_time{10s};
-  _messages.emplace(current_time() + lasting_time, std::move(message));
+  constexpr auto existing_time{24h};
+  _messages.emplace(current_time() + existing_time, std::move(message));
 }
 
 void Application::async_request(Command const &command,
@@ -354,6 +376,7 @@ auto connect(asio::io_context &io_context, std::string_view host,
   tcp::socket socket{io_context};
   auto endpoints{tcp::resolver{io_context}.resolve(host, port)};
   std::error_code ec;
+  // TODO(shelpam): use asio::async_connect here.
   asio::connect(socket, endpoints, ec);
   handle_error(ec);
   return socket;
@@ -394,17 +417,19 @@ void Application::render_unlogged_in()
       });
       _state = State::logging;
     }
-    catch (std::runtime_error const &e) {
-      if (e.what() == "Connection refused"sv) {
-        add_to_show("Cannot connect to the server. Connection refused.");
-      }
-      else if (e.what() == "resolve: Host not found (authoritative)"sv) {
+    catch (std::system_error const &e) {
+      if (e.code() == asio::error::host_not_found) {
         add_to_show(
             "Cannot connect to the server. Host not found. Please check "
             "whether the server is down, or you mistyped the host.");
       }
-      spdlog::error(e.what());
-      throw;
+      else if (e.code() == asio::error::connection_refused) {
+        add_to_show("Cannot connect to the server. Connection refused.");
+      }
+      else {
+        spdlog::error(e.what());
+        throw;
+      }
     }
   }
 }

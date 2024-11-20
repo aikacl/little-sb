@@ -76,8 +76,9 @@ private:
 
   static constexpr std::size_t buf_size{32};
   std::array<char, buf_size> _name_buf{};
-  std::array<char, buf_size> _host_buf{"localhost"};
-  std::array<char, buf_size> _message_input_buf{};
+  std::array<char, buf_size> _host_buf{"154.7.177.38"};
+  static constexpr std::size_t message_max_size{128};
+  std::array<char, message_max_size> _message_input_buf{};
 };
 
 [[nodiscard]] auto connect(asio::io_context &io_context, std::string_view host,

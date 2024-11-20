@@ -93,7 +93,7 @@ void Window::poll_events() const
   // ImGui::ShowDemoWindow(); // Show demo window! :)
 }
 
-auto Window::button(std::string const &label, float scale) -> bool
+auto Window::button(std::string const &label, float scale) const -> bool
 {
   use();
   ImGui::SetWindowFontScale(scale);
