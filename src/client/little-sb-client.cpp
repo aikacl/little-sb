@@ -13,6 +13,7 @@ auto main(int argc, char **argv) -> int
     return 1;
   }
 
+  logger_common_settings();
   log_to_console_and_file(spdlog::level::warn, "logs/client.log",
                           spdlog::level::trace);
   Window::initialize();
@@ -29,8 +30,9 @@ auto main(int argc, char **argv) -> int
     }
 #ifdef NDEBUG
   }
-  catch (std::exception &e) {
+  catch (std::exception const &e) {
     spdlog::critical("Exception: {}", e.what());
+    spdlog::dump_backtrace();
   }
 #endif
 

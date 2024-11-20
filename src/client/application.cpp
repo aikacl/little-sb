@@ -426,6 +426,9 @@ void Application::render_unlogged_in()
       else if (e.code() == asio::error::connection_refused) {
         add_to_show("Cannot connect to the server. Connection refused.");
       }
+      else if (e.code() == asio::error::timed_out) {
+        add_to_show("Cannot connect to the server. Connection time out.");
+      }
       else {
         spdlog::error(e.what());
         throw;
