@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+#include "glfw.h"
 #include <glad/gl.h>
 #include <spdlog/spdlog.h>
 
