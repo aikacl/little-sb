@@ -18,6 +18,5 @@ void log_to_console_and_file(spdlog::level::level_enum console_level,
   auto logger{std::make_shared<spdlog::logger>(
       "", spdlog::sinks_init_list{console_sink, file_sink})};
 
-  spdlog::default_logger()->name();
   spdlog::set_default_logger(logger);
 }

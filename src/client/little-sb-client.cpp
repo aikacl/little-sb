@@ -21,10 +21,12 @@ auto main(int argc, char **argv) -> int
   // The same as server, to trace the throwing source code.
   try {
 #endif
-    // constexpr auto remote_host{"154.7.177.38"sv};
-    // constexpr auto local_host{"localhost"sv};
-    Application app;
-    app.run();
+    // Since application should be destructed after `Window::deinitialize()` be
+    // called, we scope the construction of app.
+    {
+      Application app;
+      app.run();
+    }
 #ifdef NDEBUG
   }
   catch (std::exception &e) {

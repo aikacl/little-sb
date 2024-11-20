@@ -2,13 +2,14 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <stdexcept>
 
 void error_callback(int error, const char *description)
 {
   spdlog::error("GLFW({}): {}", error, description);
 }
-void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                  int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action,
+                  int /*mods*/)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -19,7 +20,7 @@ void Window::initialize()
 {
   if (glfwInit() == 0) {
     // Initialization failed
-    throw "GLFW initialization failed";
+    throw std::runtime_error{"GLFW initialization failed"};
   }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -38,7 +39,7 @@ Window::Window()
     : _window{glfwCreateWindow(1600, 1200, "Little sb", nullptr, nullptr)}
 {
   if (_window == nullptr) {
-    throw "Window or OpenGL context creation failed";
+    throw std::runtime_error{"Window or OpenGL context creation failed"};
   }
   glfwSetKeyCallback(_window, key_callback);
   int width;
@@ -67,10 +68,11 @@ Window::Window()
 
 Window::~Window()
 {
-  glfwDestroyWindow(_window);
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+
+  glfwDestroyWindow(_window);
 }
 
 void Window::use() const
@@ -82,7 +84,6 @@ void Window::poll_events() const
 {
   use();
   glfwPollEvents();
-  glClear(GL_COLOR_BUFFER_BIT);
 
   // (Your code calls glfwPollEvents())
   // ...
@@ -110,6 +111,7 @@ void Window::text(std::string const &text, float scale) const
 void Window::render() const
 {
   use();
+  glClear(GL_COLOR_BUFFER_BIT);
   // Rendering
   // (Your code clears your framebuffer, renders your other stuff etc.)
   ImGui::Render();
