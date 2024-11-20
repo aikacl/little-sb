@@ -26,7 +26,6 @@ target("little-sb-client")
     add_deps("lib")
     add_packages("asio", "glfw", "glm", "imgui", "nlohmann_json", "spdlog")
 
-
 target("little-sb-server")
     set_kind("binary")
     add_files("src/server/*.cpp")

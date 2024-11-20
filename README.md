@@ -33,3 +33,15 @@ xmake run little-sb-client    # Runs client
 xmake run little-sb-server    # Runs server
 ```
 to run them.
+
+## Contributing
+To develop the project in an IDE other than xmake, use the following commands:
+- Visual Studio: `xmake project -k vsxmake`.
+- CMake: `xmake project -k cmake`.
+- Make: `xmake project -k make`.
+- Ninja: `xmake project -k ninja`.
+
+For more information on available options, use the following command:
+```bash
+xmake project --help
+```
