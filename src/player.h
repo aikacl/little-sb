@@ -8,17 +8,35 @@
 #include <memory>
 #include <string>
 
-namespace player {
 class Player;
-using Player_ptr = std::shared_ptr<Player>;
 using Damage_range = std::pair<int, int>;
 
 class Player {
-  friend class Builder;
   friend class item::EnhancementEffect;
 
 public:
-  Player() = default;
+  class Builder {
+  public:
+    Builder();
+
+    auto name(std::string name) -> Builder &;
+    auto health(int health) -> Builder &;
+    auto damage_range(std::pair<int, int> damage_range) -> Builder &;
+    auto critical_hit_rate(float critical_hit_rate) -> Builder &;
+    auto critical_hit_buff(float critical_hit_scale) -> Builder &;
+    auto defense(int defense) -> Builder &;
+    auto money(int money) -> Builder &;
+    auto movement_volecity(double movement_volecity) -> Builder &;
+    auto visual_range(double visual_range) -> Builder &;
+    auto position(glm::vec2 position) -> Builder &;
+
+    auto build() -> std::unique_ptr<Player>;
+
+  private:
+    std::unique_ptr<Player> _player;
+  };
+
+  Player() = default; // Comforms json.
 
   void add_effect(std::shared_ptr<item::Effect> const &e)
   {
@@ -63,64 +81,25 @@ private:
   [[nodiscard]] auto damage_to(Player const &target) const -> int;
 
   std::string _name;
-  int _health;
+  int _health{};
 
   std::pair<int, int> _damage_range;
   std::map<std::shared_ptr<item::Effect>, double> _damage_amplification;
   std::map<std::shared_ptr<item::Effect>, int> _damage_addition;
 
-  float _critical_hit_rate;
-  float _critical_hit_buff;
+  float _critical_hit_rate{};
+  float _critical_hit_buff{};
 
-  int _defense;
-  int _money;
+  int _defense{};
+  int _money{};
 
-  double _movement_volecity;
-  double _visual_range;
+  double _movement_velocity{};
+  double _visual_range{};
 
-  glm::vec2 _position;
+  glm::vec2 _position{};
 
   NLOHMANN_DEFINE_TYPE_INTRUSIVE(Player, _name, _health, _damage_range,
                                  _critical_hit_rate, _critical_hit_buff,
-                                 _defense, _money, _movement_volecity,
+                                 _defense, _money, _movement_velocity,
                                  _visual_range, _position.x, _position.y)
 };
-
-class Builder {
-public:
-  void name(std::string name);
-  void health(int health);
-  void damage_range(std::pair<int, int> damage_range);
-  void critical_hit_rate(float critical_hit_rate);
-  void critical_hit_buff(float critical_hit_scale);
-  void defense(int defense);
-  void money(int money);
-  void movement_volecity(double movement_volecity);
-  void visual_range(double visual_range);
-  void position(glm::vec2 position);
-
-  [[nodiscard]] auto build() const -> Player;
-
-private:
-  std::string _name;
-  int _health;
-
-  std::pair<int, int> _damage_range;
-  float _critical_hit_rate;
-  float _critical_hit_buff;
-
-  int _defense;
-  int _money;
-
-  double _movement_volecity;
-  double _visual_range;
-
-  glm::vec2 _position;
-};
-
-class Classic_builder : public Builder {
-public:
-  explicit Classic_builder(std::string player_name);
-};
-
-} // namespace player

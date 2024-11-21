@@ -52,7 +52,7 @@ void Application::update()
 
   if (_you) {
     async_request(Command{"sync"}, [this](Event const &e) {
-      _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
+      _you = std::make_unique<Player>(e.get_arg<Player>(0));
     });
   }
 
@@ -62,17 +62,19 @@ void Application::update()
       _store_items = e.get_arg<std::map<std::string, item::Item_info>>(0);
     });
     async_request(Command{"get-game-map"}, [this](Event const &e) {
-      _game_map = std::make_shared<Game_map>(e.get_arg<Game_map>(0));
+      _game_map = std::make_unique<Game_map>(e.get_arg<Game_map>(0));
     });
     break;
   case State::starting_battle:
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
-        spdlog::warn("list-players returns {}, which is impossible.", e.name());
+        throw std::runtime_error{
+            "list-players returns {}, which is impossible."};
         return;
       }
-      _players = e.get_arg<std::map<std::string, player::Player>>(0);
-      spdlog::debug("Players: {}", json(_players).dump());
+      auto players{e.get_arg<std::vector<Player>>(0)};
+      spdlog::debug("Players: {}", json(players).dump());
+      update_players(std::move(players));
     });
   default:
     break;
@@ -233,12 +235,12 @@ void Application::starting_new_game()
   }
   _window.text("(Note: only players visible to you are shown.)");
   for (auto const &[_, player] : _players) {
-    if (!_you->can_see(player)) {
+    if (!_you->can_see(*player)) {
       continue;
     }
-    if (_window.button(player.name())) {
+    if (_window.button(player->name())) {
       Command battle{"battle"};
-      battle.add_arg(player.name());
+      battle.add_arg(player->name());
       async_request(battle, [this](Event const &e) {
         if (e.name() == "ok") {
           _battle_id = e.get_param<std::size_t>("game-id");
@@ -410,7 +412,7 @@ void Application::render_unlogged_in()
       if (e.name() != "ok") {
         assert(false);
       }
-      _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
+      _you = std::make_unique<Player>(e.get_arg<Player>(0));
       schedule_continuous_query_event();
       _state = State::greeting;
     });
@@ -454,4 +456,11 @@ void Application::connect_to_the_server()
 {
   _session = std::make_shared<Session>(
       connect(_io_context, std::string_view{_host_buf}, "1438"));
+}
+void Application::update_players(std::vector<Player> players)
+{
+  _players.clear();
+  for (auto &&p : players) {
+    _players.insert({p.name(), std::make_unique<Player>(std::move(p))});
+  }
 }

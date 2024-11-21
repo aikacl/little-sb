@@ -1,59 +1,58 @@
 #include "player.h"
 #include "random.h"
 
-player::Player::Player(std::string name, int health,
-                       std::pair<int, int> damage_range,
-                       float critical_hit_rate, float critical_hit_buff,
-                       int defense, int money, double movement_volecity,
-                       double visual_range, glm::vec2 position)
+Player::Player(std::string name, int health, std::pair<int, int> damage_range,
+               float critical_hit_rate, float critical_hit_buff, int defense,
+               int money, double movement_volecity, double visual_range,
+               glm::vec2 position)
     : _name{std::move(name)}, _health{health}, _damage_range{damage_range},
       _critical_hit_rate{critical_hit_rate},
       _critical_hit_buff{critical_hit_buff}, _defense{defense}, _money{money},
-      _movement_volecity{movement_volecity}, _visual_range{visual_range},
+      _movement_velocity{movement_volecity}, _visual_range{visual_range},
       _position{position}
 {
 }
 
-auto player::Player::attack(player::Player &target) const -> int
+auto Player::attack(Player &target) const -> int
 {
   return target.take_damage(damage_to(target));
 }
 
-auto player::Player::take_damage(int damage) -> int
+auto Player::take_damage(int damage) -> int
 {
   damage = std::min(damage, this->_health);
   this->_health -= damage;
   return damage;
 }
 
-void player::Player::cure(int delta)
+void Player::cure(int delta)
 {
   assert(delta >= 0);
   _health += delta;
 }
 
-auto player::Player::name() const -> std::string const &
+auto Player::name() const -> std::string const &
 {
   return _name;
 }
 
-auto player::Player::health() const -> int
+auto Player::health() const -> int
 {
   return _health;
 }
 
-auto player::Player::damage_to(player::Player const &target) const -> int
+auto Player::damage_to(Player const &target) const -> int
 {
   auto const original{hit_one() - target._defense};
   return std::max(original, 0);
 }
 
-auto player::Player::damage_range() const -> std::pair<int, int>
+auto Player::damage_range() const -> std::pair<int, int>
 {
   return _damage_range;
 }
 
-auto player::Player::generate_damage_from_range() const -> int
+auto Player::generate_damage_from_range() const -> int
 {
   auto effect_on{[this](int value) {
     for (auto const &[_, v] : _damage_amplification) {
@@ -68,7 +67,7 @@ auto player::Player::generate_damage_from_range() const -> int
                                     effect_on(_damage_range.second));
 }
 
-auto player::Player::hit_one() const -> int
+auto Player::hit_one() const -> int
 {
   auto const damage{generate_damage_from_range()};
   auto const extra{little_sb::random::probability(_critical_hit_rate)
@@ -79,118 +78,102 @@ auto player::Player::hit_one() const -> int
   return static_cast<int>(scaled_damage);
 }
 
-auto player::Player::defense() const -> int
+auto Player::defense() const -> int
 {
   return _defense;
 }
 
-void player::Player::cost_money(int cost)
+void Player::cost_money(int cost)
 {
   _money -= cost;
 }
 
-auto player::Player::money() const -> int
+auto Player::money() const -> int
 {
   return _money;
 }
-auto player::Player::critical_hit_rate() const -> float
+auto Player::critical_hit_rate() const -> float
 {
   return _critical_hit_rate;
 }
-void player::Player::critical_hit_rate(float rate)
+void Player::critical_hit_rate(float rate)
 {
   _critical_hit_rate = rate;
 }
-void player::Builder::name(std::string name)
+auto Player::Builder::name(std::string name) -> Player::Builder &
 {
-  _name = std::move(name);
+  _player->_name = std::move(name);
+  return *this;
 }
 
-void player::Builder::health(int health)
+auto Player::Builder::health(int health) -> Player::Builder &
 {
-  _health = health;
+  _player->_health = health;
+  return *this;
 }
 
-void player::Builder::damage_range(std::pair<int, int> damage_range)
+auto Player::Builder::damage_range(std::pair<int, int> damage_range)
+    -> Player::Builder &
 {
-  _damage_range = damage_range;
+  _player->_damage_range = damage_range;
+  return *this;
 }
 
-void player::Builder::critical_hit_rate(float critical_hit_rate)
+auto Player::Builder::critical_hit_rate(float critical_hit_rate)
+    -> Player::Builder &
 {
-  _critical_hit_rate = critical_hit_rate;
+  _player->_critical_hit_rate = critical_hit_rate;
+  return *this;
 }
 
-void player::Builder::critical_hit_buff(float critical_hit_scale)
+auto Player::Builder::critical_hit_buff(float critical_hit_scale)
+    -> Player::Builder &
 {
-  _critical_hit_buff = critical_hit_scale;
+  _player->_critical_hit_buff = critical_hit_scale;
+  return *this;
 }
 
-void player::Builder::defense(int defense)
+auto Player::Builder::defense(int defense) -> Player::Builder &
 {
-  _defense = defense;
+  _player->_defense = defense;
+  return *this;
 }
 
-void player::Builder::money(int money)
+auto Player::Builder::money(int money) -> Player::Builder &
 {
-  _money = money;
+  _player->_money = money;
+  return *this;
 }
 
-auto player::Builder::build() const -> player::Player
+auto Player::Builder::build() -> std::unique_ptr<Player>
 {
-  return player::Player{_name,
-                        _health,
-                        _damage_range,
-                        _critical_hit_rate,
-                        _critical_hit_buff,
-                        _defense,
-                        _money,
-                        _movement_volecity,
-                        _visual_range,
-                        _position};
+  return std::move(_player);
 }
 
-player::Classic_builder::Classic_builder(std::string player_name)
+auto Player::Builder::movement_volecity(double movement_volecity)
+    -> Player::Builder &
 {
-  name(std::move(player_name));
-  health(little_sb::random::uniform(2000, 3000));
-  {
-    auto d1{little_sb::random::uniform(80, 100)};
-    auto d2{little_sb::random::uniform(80, 100)};
-    if (d1 > d2) {
-      std::swap(d1, d2);
-    }
-    damage_range({d1, d2});
-  }
-  critical_hit_rate(little_sb::random::uniform(0.3, 0.5));
-  critical_hit_buff(1.5);
-  defense(little_sb::random::uniform(20, 30));
-  money(20);
-  movement_volecity(1);
-  visual_range(15);
-  position(
-      {little_sb::random::uniform(0, 9), little_sb::random::uniform(0, 19)});
+  _player->_movement_velocity = movement_volecity;
+  return *this;
 }
 
-void player::Builder::movement_volecity(double movement_volecity)
+auto Player::Builder::visual_range(double visual_range) -> Player::Builder &
 {
-  _movement_volecity = movement_volecity;
+  _player->_visual_range = visual_range;
+  return *this;
 }
-
-void player::Builder::visual_range(double visual_range)
+auto Player::Builder::position(glm::vec2 position) -> Player::Builder &
 {
-  _visual_range = visual_range;
+  _player->_position = position;
+  return *this;
 }
-void player::Builder::position(glm::vec2 position)
-{
-  _position = position;
-}
-auto player::Player::position() const -> glm::vec2
+auto Player::position() const -> glm::vec2
 {
   return _position;
 }
-auto player::Player::can_see(Player const &other) const -> bool
+auto Player::can_see(Player const &other) const -> bool
 {
   // TODO(shelpam): Terrain effect
   return glm::distance(_position, other._position) <= _visual_range;
 }
+Player::Builder::Builder() : _player{std::make_unique<Player>()} {}

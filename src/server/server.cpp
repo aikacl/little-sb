@@ -69,7 +69,7 @@ void Server::remove_player(std::string const &player_name)
   _players.extract(player_name);
 }
 
-auto Server::allocate_game(std::array<player::Player *, 2> players) -> Battle &
+auto Server::allocate_game(std::array<Player *, 2> players) -> Battle &
 {
   auto const id{_games.empty() ? std::uint64_t{} : _games.rbegin()->first + 1};
   return _games.try_emplace(id, Battle{id, players, &_session_service})

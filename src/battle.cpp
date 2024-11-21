@@ -1,9 +1,8 @@
 #include "battle.h"
 #include "chrono.h"
 
-Battle::Battle(std::uint64_t const id,
-               std::array<player::Player *, 2> const players,
-               Session_service *const session_service)
+Battle::Battle(std::uint64_t id, std::array<Player *, 2> players,
+               Session_service *session_service)
     : _id{id}, _players{players}, _session_service{session_service}
 {
 }

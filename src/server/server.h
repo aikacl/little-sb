@@ -36,7 +36,7 @@ private:
   void
   register_command_executor(std::unique_ptr<Server_command_executor> executor);
   void remove_player(std::string const &player_name);
-  auto allocate_game(std::array<player::Player *, 2> players) -> Battle &;
+  auto allocate_game(std::array<Player *, 2> players) -> Battle &;
   void run_main_game_loop();
   [[nodiscard]] auto verify_userinfo(Packet::Sender const &user) const -> bool;
 
@@ -46,7 +46,7 @@ private:
 
   std::map<std::uint64_t, Battle> _games;
   std::map<std::string, item::Item_info> _store_items;
-  std::map<std::string, player::Player> _players;
+  std::map<std::string, std::unique_ptr<Player>> _players;
   std::map<std::string, std::unique_ptr<Server_command_executor>>
       _server_commands;
 

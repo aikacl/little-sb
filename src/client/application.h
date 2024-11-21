@@ -59,23 +59,25 @@ private:
   asio::io_context _io_context;
   Session_ptr _session;
 
-  std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds>
-      _start_time;
+  std::chrono::time_point<std::chrono::steady_clock> _start_time;
 
   State _state{State::unlogged_in};
   std::string _name;
 
   Window _window;
 
-  player::Player_ptr _you;
+  std::unique_ptr<Player> _you;
 
   std::size_t _battle_id{};
   std::size_t _battled_rounds{};
 
-  std::shared_ptr<Game_map> _game_map;
+  std::unique_ptr<Game_map> _game_map;
 
   std::set<Message> _messages;
-  std::map<std::string, player::Player> _players;
+
+  void update_players(std::vector<Player> players);
+  std::map<std::string, std::unique_ptr<Player>> _players;
+
   std::map<std::string, item::Item_info> _store_items;
 
   static constexpr std::size_t buf_size{32};

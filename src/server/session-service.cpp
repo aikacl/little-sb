@@ -2,6 +2,7 @@
 #include "battle.h"
 #include "command.h"
 #include "packet.h"
+#include "player.h"
 #include "server-command-executor.h"
 #include "server.h"
 
@@ -73,8 +74,26 @@ auto Session_service::handle_command(std::string const &player_name,
   // We create new information if the player instance doesn't exist. So here the
   // player should be existing.
   if (!_server->_players.contains(player_name)) {
-    player::Classic_builder builder{player_name};
-    _server->_players.insert({player_name, builder.build()});
+    auto d1{little_sb::random::uniform(80, 100)};
+    auto d2{little_sb::random::uniform(80, 100)};
+    if (d1 > d2) {
+      std::swap(d1, d2);
+    };
+    _server->_players.insert(
+        {player_name,
+         Player::Builder{}
+             .name(player_name)
+             .health(little_sb::random::uniform(2000, 3000))
+             .damage_range({d1, d2})
+             .critical_hit_rate(little_sb::random::uniform(0.3, 0.5))
+             .critical_hit_buff(1.5)
+             .defense(little_sb::random::uniform(20, 30))
+             .money(100)
+             .movement_volecity(1)
+             .visual_range(15)
+             .position({little_sb::random::uniform(0, 9),
+                        little_sb::random::uniform(0, 19)})
+             .build()});
   }
 
   auto &player{_server->_players.at(player_name)};
@@ -83,7 +102,7 @@ auto Session_service::handle_command(std::string const &player_name,
   if (command.name() == "login") {
     spdlog::info("{} logged in", player_name);
     Event e{"ok"};
-    e.add_arg(player);
+    e.add_arg(*player);
     return e;
   }
 
@@ -100,8 +119,9 @@ auto Session_service::handle_command(std::string const &player_name,
       e.add_arg("Player not found.");
       return e;
     }
-    auto const &game{_server->allocate_game(
-        {&_server->_players[player_name], &_server->_players[target]})};
+    auto const &game{
+        _server->allocate_game({_server->_players[player_name].get(),
+                                _server->_players[target].get()})};
     Event battle{"battle"s};
     battle.set_param("from", player_name);
     push_event(target, battle);
@@ -112,17 +132,17 @@ auto Session_service::handle_command(std::string const &player_name,
   if (command.name() == "buy") {
     auto const item_name{command.get_arg<std::string>(0)};
     auto const &item{_server->_store_items[item_name]};
-    if (player.money() < item.price) {
+    if (player->money() < item.price) {
       Event e{"error"};
       e.add_arg("You don't have enough money to buy this item!");
       return e;
     }
-    player.cost_money(item.price);
+    player->cost_money(item.price);
     // item.effect;
     // TODO(shelpam): now only provides one goods, so not using flexible way to
     // achieve the effect.
     if (item.name == "First aid kit") {
-      player.cure(10);
+      player->cure(10);
       Event cure{"cure"};
       cure.add_arg(10);
       cure.set_param("cause",
@@ -143,7 +163,14 @@ auto Session_service::handle_command(std::string const &player_name,
   }
   if (command.name() == "list-players") {
     Event e{"ok"};
-    e.add_arg(_server->_players);
+    {
+      std::vector<Player> players;
+      players.reserve(_server->_players.size());
+      for (auto const &[_, p] : _server->_players) {
+        players.push_back(*p);
+      }
+      e.add_arg(players);
+    }
     return e;
   }
   if (command.name() == "query-event") {
@@ -154,7 +181,7 @@ auto Session_service::handle_command(std::string const &player_name,
   }
   if (command.name() == "sync") {
     Event e{"ok"};
-    e.add_arg(player);
+    e.add_arg(*player);
     return e;
   }
 
