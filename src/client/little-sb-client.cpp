@@ -15,7 +15,7 @@ auto main(int argc, char **argv) -> int
 
   logger_common_settings();
   log_to_console_and_file(spdlog::level::warn, "logs/client.log",
-                          spdlog::level::trace);
+                          spdlog::level::debug);
   Window::initialize();
 
 #ifdef NDEBUG
