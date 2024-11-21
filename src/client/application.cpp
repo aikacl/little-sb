@@ -38,7 +38,7 @@ void Application::tick()
 
 void Application::poll_events()
 {
-  // TODO(shelpam): comment needed–why should we restart here?
+  // TODO(shelpam): comments needed—why should we restart here?
   _io_context.poll();
   if (_io_context.stopped()) {
     _io_context.restart();
@@ -377,6 +377,7 @@ void Application::remove_expired_messages()
 }
 void Application::render_unlogged_in()
 {
+  // TODO(shelpam): refactor: extract `input text` into `Window` class.
   ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
   _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
   ImGui::InputText("Server host", _host_buf.data(), _host_buf.size());
@@ -386,17 +387,7 @@ void Application::render_unlogged_in()
       return;
     }
     try {
-      _session = std::make_shared<Session>(
-          connect(_io_context, std::string_view{_host_buf}, "1438"));
-      async_request(Command{"login"}, [this](Event const &e) {
-        if (e.name() != "ok") {
-          assert(false);
-        }
-        _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
-        schedule_continuous_query_event();
-        _state = State::greeting;
-      });
-      _state = State::logging;
+      connect_to_the_server();
     }
     catch (std::system_error const &e) {
       if (e.code() == asio::error::host_not_found) {
@@ -415,6 +406,15 @@ void Application::render_unlogged_in()
         throw;
       }
     }
+    async_request(Command{"login"}, [this](Event const &e) {
+      if (e.name() != "ok") {
+        assert(false);
+      }
+      _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
+      schedule_continuous_query_event();
+      _state = State::greeting;
+    });
+    _state = State::logging;
   }
 }
 void Application::render_messages()
@@ -453,4 +453,9 @@ void Application::render_messages()
   if (_window.button("Clear messages")) {
     _messages.clear();
   }
+}
+void Application::connect_to_the_server()
+{
+  _session = std::make_shared<Session>(
+      connect(_io_context, std::string_view{_host_buf}, "1438"));
 }

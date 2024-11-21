@@ -54,6 +54,7 @@ private:
                      std::function<void(Event)> on_replied);
 
   void remove_expired_messages();
+  void connect_to_the_server();
 
   asio::io_context _io_context;
   Session_ptr _session;
