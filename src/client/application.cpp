@@ -269,7 +269,8 @@ void Application::process_event(Event const &event)
     auto const from{event.get_param<std::string>("from")};
     auto const what{event.get_arg<std::string>(0)};
     spdlog::info("{} said: {}", from, what);
-    add_to_show(std::format("{} said: {}", from, what));
+    add_to_show(
+        std::format("In {}, {} said: {}", event.created_time(), from, what));
   }
   else if (event.name() == "battle") {
     add_to_show(std::format("{} called for a fight with you.",
@@ -325,8 +326,7 @@ void Application::add_to_show(std::string message)
 {
   using namespace std::chrono_literals;
   constexpr auto existing_time{24h};
-  _messages.insert(Message{.created_time{std::chrono::system_clock::now()},
-                           .expiring_time{current_time() + existing_time},
+  _messages.insert(Message{.expiring_time{current_time() + existing_time},
                            .content{std::move(message)}});
 }
 
@@ -437,11 +437,7 @@ void Application::render_messages()
     // In order to make the font size seems to be the same with outter text, and
     // the actual font size is calculated by `outter-size * inner-scale`, we
     // should set the second parameter `scale` to 1 here.
-    _window.text(
-        std::format("In {:%Y/%m/%d %H:%M:%S}, {}",
-                    std::chrono::round<std::chrono::seconds>(msg.created_time),
-                    msg.content),
-        1);
+    _window.text(std::format("{}", msg.content), 1);
   }
 
   was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();

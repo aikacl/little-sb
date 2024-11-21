@@ -59,7 +59,8 @@ private:
   asio::io_context _io_context;
   Session_ptr _session;
 
-  Time_point _start_time;
+  std::chrono::time_point<std::chrono::steady_clock, std::chrono::nanoseconds>
+      _start_time;
 
   State _state{State::unlogged_in};
   std::string _name;
