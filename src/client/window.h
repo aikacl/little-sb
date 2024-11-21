@@ -36,7 +36,8 @@ public:
   void pane_end() const;
 
   // Creates a button on current pane.
-  auto button(std::string const &label, float scale = 3) const -> bool;
+  [[nodiscard]] auto button(std::string const &label, float scale = 3) const
+      -> bool;
 
   // Creates text on current pane.
   void text(std::string const &text, float scale = 3) const;

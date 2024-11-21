@@ -44,11 +44,6 @@ auto Battle::id() const -> std::uint64_t
   return _id;
 }
 
-auto Battle::pending_events() -> std::queue<std::string> &
-{
-  return _pending_events;
-}
-
 auto Battle::ended() const -> bool
 {
   return _ended;
@@ -62,7 +57,7 @@ void Battle::stop(Stop_cause cause)
     _session_service->push_event(_players[0]->name(), game_end);
 
     Event message{"message"};
-    message.add_arg(cause);
+    message.add_arg("Someone's health has dropped to 0.");
     _session_service->push_event(_players[1]->name(), message);
     break;
   }

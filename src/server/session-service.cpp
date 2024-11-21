@@ -96,7 +96,7 @@ auto Session_service::handle_command(std::string const &player_name,
              .build()});
   }
 
-  auto &player{_server->_players.at(player_name)};
+  auto const &player{_server->_players.at(player_name)};
 
   // TODO(ShelpAm): add authentication.
   if (command.name() == "login") {
@@ -163,14 +163,13 @@ auto Session_service::handle_command(std::string const &player_name,
   }
   if (command.name() == "list-players") {
     Event e{"ok"};
-    {
-      std::vector<Player> players;
-      players.reserve(_server->_players.size());
-      for (auto const &[_, p] : _server->_players) {
-        players.push_back(*p);
-      }
-      e.add_arg(players);
+    // Converts players.
+    std::vector<Player> players;
+    players.reserve(_server->_players.size());
+    for (auto const &[_, p] : _server->_players) {
+      players.push_back(*p);
     }
+    e.add_arg(std::move(players));
     return e;
   }
   if (command.name() == "query-event") {

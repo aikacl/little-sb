@@ -70,10 +70,8 @@ void Application::update()
       if (e.name() != "ok") {
         throw std::runtime_error{
             "list-players returns {}, which is impossible."};
-        return;
       }
       auto players{e.get_arg<std::vector<Player>>(0)};
-      spdlog::debug("Players: {}", json(players).dump());
       update_players(std::move(players));
     });
   default:
@@ -114,10 +112,8 @@ void Application::render()
     break;
   }
 
-  if (_state != State::unlogged_in) {
-    _window.text("");
-    render_messages();
-  }
+  _window.text("");
+  render_messages();
 
   _window.pane_end();
 
@@ -457,10 +453,10 @@ void Application::connect_to_the_server()
   _session = std::make_shared<Session>(
       connect(_io_context, std::string_view{_host_buf}, "1438"));
 }
-void Application::update_players(std::vector<Player> players)
+void Application::update_players(std::vector<Player> const &players)
 {
   _players.clear();
   for (auto &&p : players) {
-    _players.insert({p.name(), std::make_unique<Player>(std::move(p))});
+    _players.insert({p.name(), std::make_unique<Player>(p)});
   }
 }

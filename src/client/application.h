@@ -75,7 +75,7 @@ private:
 
   std::set<Message> _messages;
 
-  void update_players(std::vector<Player> players);
+  void update_players(std::vector<Player> const &players);
   std::map<std::string, std::unique_ptr<Player>> _players;
 
   std::map<std::string, item::Item_info> _store_items;

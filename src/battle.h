@@ -19,13 +19,10 @@ public:
 
   [[nodiscard]] auto id() const -> std::uint64_t;
 
-  [[nodiscard]] auto pending_events() -> std::queue<std::string> &;
-
   [[nodiscard]] auto ended() const -> bool;
 
 private:
   std::size_t _id;
-  std::queue<std::string> _pending_events;
   std::array<Player *, 2> _players; // First sender, second receiver
   Session_service *_session_service;
   bool _ended{};
