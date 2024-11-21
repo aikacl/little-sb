@@ -4,6 +4,7 @@
 
 using namespace std::literals;
 
+// When you send request from client to the server, you're passing a command.
 class Command {
   friend void to_json(json &j, const Command &cmd);
   friend void from_json(const json &j, Command &cmd);
@@ -14,6 +15,8 @@ public:
   explicit Command(json data);
 
   [[nodiscard]] auto name() const -> std::string;
+
+  // Returns the time when the command was created.
   [[nodiscard]] auto created_time() const -> std::string;
 
   // Getter and setter for parameters.
