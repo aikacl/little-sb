@@ -124,3 +124,12 @@ auto Window::should_close() const -> bool
 {
   return glfwWindowShouldClose(_window) != 0;
 }
+void Window::pane_begin(std::string const &name) const
+{
+  ImGui::Begin(name.c_str());
+}
+
+void Window::pane_end() const
+{
+  ImGui::End();
+}

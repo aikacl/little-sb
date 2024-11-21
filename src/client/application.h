@@ -38,7 +38,9 @@ private:
   void render();
   void render_unlogged_in();
 
-  void show_user_info();
+  void render_messages();
+
+  void show_player_info();
   void handle_greeting();
   void handle_starting_battle();
   void handle_battling();

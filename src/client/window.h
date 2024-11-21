@@ -21,14 +21,25 @@ public:
   auto operator=(Window &&) -> Window & = delete;
   ~Window();
 
+  [[nodiscard]] auto should_close() const -> bool;
+
   void use() const;
   void poll_events() const;
   void render() const;
 
-  auto button(std::string const &label, float scale = 3) const -> bool;
-  void text(std::string const &text, float scale = 3) const;
+  // After calling this, you mustn't call another instance's
+  // `Window::pane_begin()`. This is an undefined behavior.
+  void pane_begin(std::string const &name) const;
 
-  [[nodiscard]] auto should_close() const -> bool;
+  // Must be called right after this instance's `Window::pane_begin(std::string
+  // const &)`.
+  void pane_end() const;
+
+  // Creates a button on current pane.
+  auto button(std::string const &label, float scale = 2) const -> bool;
+
+  // Creates text on current pane.
+  void text(std::string const &text, float scale = 2) const;
 
 private:
   GLFWwindow *_window;

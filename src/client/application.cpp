@@ -83,10 +83,10 @@ void Application::update()
 
 void Application::render()
 {
-  ImGui::Begin("Player info");
+  _window.pane_begin("Player info"s);
 
   if (_you) {
-    show_user_info();
+    show_player_info();
   }
 
   switch (_state) {
@@ -112,12 +112,17 @@ void Application::render()
     break;
   }
 
-  ImGui::End();
+  if (_state != State::unlogged_in) {
+    _window.text("");
+    render_messages();
+  }
+
+  _window.pane_end();
 
   _window.render();
 }
 
-void Application::show_user_info()
+void Application::show_player_info()
 {
   _window.text(std::format("Your name: {}", _you->name()));
   _window.text(std::format("Your health: {}", _you->health()));
@@ -179,39 +184,6 @@ void Application::handle_greeting()
         }
       });
     }
-  }
-
-  
-  _window.text("");
-  _window.text("Messages:");
-  ImGui::BeginChild("Scrolling");
-
-  // Since the scroll data will be updated in the next frame, so we should
-  // save last frame data, to update current frame scrolling position.
-  static bool was_at_bottom{};
-  static bool last_frame_new_message_arrived{};
-  static std::size_t last_messages_size{};
-
-  if (last_frame_new_message_arrived && was_at_bottom) {
-    // Scrolls down
-    ImGui::SetScrollY(ImGui::GetScrollMaxY());
-  }
-
-  for (auto const &msg : _messages) {
-    // In order to make the font size seems to be the same with outter text, and
-    // the actual font size is calculated by `outter-size * inner-scale`, we
-    // should set the second parameter `scale` to 1 here.
-    _window.text(msg.content, 1);
-  }
-
-  was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
-  last_frame_new_message_arrived = _messages.size() != last_messages_size;
-  last_messages_size = _messages.size();
-
-  ImGui::EndChild();
-  
-  if(_window.button("Clear messages")){
-    _messages.clear();
   }
 }
 
@@ -353,7 +325,9 @@ void Application::add_to_show(std::string message)
 {
   using namespace std::chrono_literals;
   constexpr auto existing_time{24h};
-  _messages.emplace(current_time() + existing_time, std::move(message));
+  _messages.insert(Message{.created_time{std::chrono::system_clock::now()},
+                           .expiring_time{current_time() + existing_time},
+                           .content{std::move(message)}});
 }
 
 void Application::async_request(Command const &command,
@@ -441,5 +415,42 @@ void Application::render_unlogged_in()
         throw;
       }
     }
+  }
+}
+void Application::render_messages()
+{
+  _window.text("Messages:");
+  ImGui::BeginChild("Scrolling");
+
+  // Since the scroll data will be updated in the next frame, so we should
+  // save last frame data, to update current frame scrolling position.
+  static bool was_at_bottom{};
+  static bool last_frame_new_message_arrived{};
+  static std::size_t last_messages_size{};
+
+  if (last_frame_new_message_arrived && was_at_bottom) {
+    // Scrolls down
+    ImGui::SetScrollY(ImGui::GetScrollMaxY());
+  }
+
+  for (auto const &msg : _messages) {
+    // In order to make the font size seems to be the same with outter text, and
+    // the actual font size is calculated by `outter-size * inner-scale`, we
+    // should set the second parameter `scale` to 1 here.
+    _window.text(
+        std::format("In {:%Y/%m/%d %H:%M:%S}, {}",
+                    std::chrono::round<std::chrono::seconds>(msg.created_time),
+                    msg.content),
+        1);
+  }
+
+  was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
+  last_frame_new_message_arrived = _messages.size() != last_messages_size;
+  last_messages_size = _messages.size();
+
+  ImGui::EndChild();
+
+  if (_window.button("Clear messages")) {
+    _messages.clear();
   }
 }
