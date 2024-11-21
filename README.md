@@ -33,6 +33,10 @@ xmake run little-sb-client    # Runs the client
 xmake run little-sb-server    # Runs the server
 ```
 
+### Build prerequisites
+- [XMake](https://xmake.io)—builds the project
+
+
 ## Contributing
 To develop the project in an IDE other than xmake, use the following commands:
 - Visual Studio: `xmake project -k vsxmake`.
@@ -45,7 +49,3 @@ For more information on available options, use the following command:
 ```
 xmake project --help
 ```
-
-### Build prerequisites
-- [XMake](https://xmake.io)—builds the project
-
