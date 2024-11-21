@@ -14,13 +14,14 @@ public:
   explicit Command(json data);
 
   [[nodiscard]] auto name() const -> std::string;
-  void name(std::string name);
+  [[nodiscard]] auto created_time() const -> std::string;
 
+  // Getter and setter for parameters.
   template <typename T>
   [[nodiscard]] auto get_param(std::string const &key) const -> T;
   template <typename T> void set_param(std::string const &key, T value);
 
-  // Getter and setter for arguments
+  // Getter and setter for arguments.
   [[nodiscard]] auto args() -> json &;
   [[nodiscard]] auto args() const -> json const &;
   template <typename T>
