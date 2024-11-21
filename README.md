@@ -13,26 +13,25 @@ Some of the screenshots:
 ## Architecture
 The project utilize C/S Architecture, thus consists of a client and a server.
 
-## Prerequisite
-To prepare for the building process, you should install the following software:
-- [XMake](https://xmake.io)—builds the project
+## Install from source
 
-## Build
-To build the project, simply run
-```bash
-xmake
+### Quick start
+1. Install [build prerequisites](#build-prerequisites) on your system.
+2. `git clone https://github.com/ShelpAm/little-sb.git`
+3. `cd little-sb`
+4. `xmake build`
+
+To build client or server separately:
 ```
-And it builds both client and server. To build client or server seperately, use:
-```bash
-xmake build little-sb-client  # Builds client
-xmake build little-sb-server  # Builds server
+xmake build little-sb-client  # Builds the client
+xmake build little-sb-server  # Builds the server
 ```
-Use
-```bash
-xmake run little-sb-client    # Runs client
-xmake run little-sb-server    # Runs server
+
+To run the project, use:
 ```
-to run them.
+xmake run little-sb-client    # Runs the client
+xmake run little-sb-server    # Runs the server
+```
 
 ## Contributing
 To develop the project in an IDE other than xmake, use the following commands:
@@ -43,6 +42,10 @@ To develop the project in an IDE other than xmake, use the following commands:
 - compile_commands.json: `xmake project -k compile_commands`.
 
 For more information on available options, use the following command:
-```bash
+```
 xmake project --help
 ```
+
+### Build prerequisites
+- [XMake](https://xmake.io)—builds the project
+
