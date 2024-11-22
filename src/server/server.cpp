@@ -1,7 +1,7 @@
-#include "server/server.h"
+#include "server.h"
 #include "battle.h"
 #include "player.h"
-#include "server/server-command-executor.h"
+#include "server-command-executor.h"
 #include <source_location>
 #include <spdlog/spdlog.h>
 

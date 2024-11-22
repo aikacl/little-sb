@@ -1,5 +1,6 @@
 #pragma once
 
+#include "client/main-window.h"
 #include "client/message.h"
 #include "command.h"
 #include "event.h"
@@ -7,7 +8,6 @@
 #include "item/item.h"
 #include "player.h"
 #include "session.h"
-#include "window.h"
 #include <set>
 
 class Application {
@@ -61,10 +61,12 @@ private:
 
   std::chrono::time_point<std::chrono::steady_clock> _start_time;
 
+  long double _frame_per_second;
+
   State _state{State::unlogged_in};
   std::string _name;
 
-  Window _window;
+  Main_window _window;
 
   std::unique_ptr<Player> _you;
 

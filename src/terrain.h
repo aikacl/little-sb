@@ -2,9 +2,9 @@
 
 #include "json.h"
 
-class Terrain {
+class Basic_terrain {
 public:
-  Terrain(char display = 0);
+  Basic_terrain(char display = '.');
 
   operator char() const
   {
@@ -14,17 +14,17 @@ public:
 private:
   char _display;
 
-  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Terrain, _display);
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Basic_terrain, _display);
 };
 
 namespace terrains {
 
-class Dirt : public Terrain {};
+class Dirt : public Basic_terrain {};
 
-class Mountain : public Terrain {};
+class Mountain : public Basic_terrain {};
 
-class Forest : public Terrain {};
+class Forest : public Basic_terrain {};
 
-class Water : public Terrain {};
+class Water : public Basic_terrain {};
 
 } // namespace terrains

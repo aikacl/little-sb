@@ -79,6 +79,8 @@ auto Session_service::handle_command(std::string const &player_name,
     if (d1 > d2) {
       std::swap(d1, d2);
     };
+    glm::vec2 position{little_sb::random::uniform(0, 9),
+                       little_sb::random::uniform(0, 19)};
     _server->_players.insert(
         {player_name,
          Player::Builder{}
@@ -91,9 +93,10 @@ auto Session_service::handle_command(std::string const &player_name,
              .money(100)
              .movement_volecity(1)
              .visual_range(15)
-             .position({little_sb::random::uniform(0, 9),
-                        little_sb::random::uniform(0, 19)})
+             .position(position)
              .build()});
+
+    _server->_game_map.modify(position.x, position.y, Basic_terrain{'P'});
   }
 
   auto const &player{_server->_players.at(player_name)};

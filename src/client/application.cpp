@@ -48,6 +48,11 @@ void Application::poll_events()
 
 void Application::update()
 {
+  static Duration last_tick{current_time()};
+  auto const now{current_time()};
+  _frame_per_second = 1.0s / (now - last_tick);
+  last_tick = now;
+
   // Async query event would be started before main loop.
 
   if (_you) {
@@ -72,7 +77,7 @@ void Application::update()
             "list-players returns {}, which is impossible."};
       }
       auto players{e.get_arg<std::vector<Player>>(0)};
-      update_players(std::move(players));
+      update_players(players);
     });
   default:
     break;
@@ -83,39 +88,68 @@ void Application::update()
 
 void Application::render()
 {
-  _window.pane_begin("Player info"s);
+  {
+    _window.pane_begin("Player info"s);
+    _window.font_scale(3);
 
-  if (_you) {
-    show_player_info();
+    static Duration last_sample_fps{current_time()};
+    static long double sampled_fps;
+    if (auto const current_sample_fps{current_time()};
+        current_sample_fps > last_sample_fps + 1s) {
+      sampled_fps = _frame_per_second;
+      last_sample_fps = current_time();
+    }
+    _window.text(std::format("fps: {:.0f}", sampled_fps));
+
+    if (_you) {
+      show_player_info();
+    }
+
+    switch (_state) {
+    case State::unlogged_in:
+      render_unlogged_in();
+      break;
+    case State::logging:
+      _window.text("Logging in...");
+      break;
+    case State::greeting:
+      handle_greeting();
+      break;
+    case State::starting_battle:
+      handle_starting_battle();
+      break;
+    case State::battling:
+      handle_battling();
+      break;
+    case State::ended:
+      handle_ended();
+      break;
+    default: // Unreachable
+      break;
+    }
+
+    _window.text("");
+    render_messages();
+
+    _window.pane_end();
   }
 
-  switch (_state) {
-  case State::unlogged_in:
-    render_unlogged_in();
-    break;
-  case State::logging:
-    _window.text("Logging in...");
-    break;
-  case State::greeting:
-    handle_greeting();
-    break;
-  case State::starting_battle:
-    handle_starting_battle();
-    break;
-  case State::battling:
-    handle_battling();
-    break;
-  case State::ended:
-    handle_ended();
-    break;
-  default: // Unreachable
-    break;
+  {
+    _window.pane_begin("Battle field");
+    _window.font_scale(3);
+
+    // if (ImGui::IsItemFocused()) {
+    //   if () {
+    //   }
+    // }
+
+    if (_game_map) {
+      for (auto const &line : _game_map->to_char_matrix()) {
+        _window.text(line | std::ranges::to<std::string>());
+      }
+    }
+    _window.pane_end();
   }
-
-  _window.text("");
-  render_messages();
-
-  _window.pane_end();
 
   _window.render();
 }
@@ -435,7 +469,7 @@ void Application::render_messages()
     // In order to make the font size seems to be the same with outter text, and
     // the actual font size is calculated by `outter-size * inner-scale`, we
     // should set the second parameter `scale` to 1 here.
-    _window.text(std::format("{}", msg.content), 1);
+    _window.text(std::format("{}", msg.content));
   }
 
   was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();

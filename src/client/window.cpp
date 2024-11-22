@@ -4,16 +4,17 @@
 #include "imgui_impl_opengl3.h"
 #include <stdexcept>
 
+std::unordered_map<GLFWwindow *, Window *> Window::forward_table;
+
 void error_callback(int error, const char *description)
 {
   spdlog::error("GLFW({}): {}", error, description);
 }
-void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action,
-                  int /*mods*/)
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                  int mods)
 {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
+  Window::forward_table[window]->key_callback(key, scancode, action, mods);
 }
 
 void Window::initialize()
@@ -41,7 +42,10 @@ Window::Window()
   if (_window == nullptr) {
     throw std::runtime_error{"Window or OpenGL context creation failed"};
   }
-  glfwSetKeyCallback(_window, key_callback);
+
+  forward_table.insert({_window, this});
+
+  glfwSetKeyCallback(_window, ::key_callback);
   int width;
   int height;
   glfwGetFramebufferSize(_window, &width, &height);
@@ -68,6 +72,8 @@ Window::Window()
 
 Window::~Window()
 {
+  forward_table.erase(_window);
+
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -94,17 +100,15 @@ void Window::poll_events() const
   // ImGui::ShowDemoWindow(); // Show demo window! :)
 }
 
-auto Window::button(std::string const &label, float scale) const -> bool
+auto Window::button(std::string const &label) const -> bool
 {
   use();
-  ImGui::SetWindowFontScale(scale);
   return ImGui::Button(label.c_str());
 }
 
-void Window::text(std::string const &text, float scale) const
+void Window::text(std::string const &text) const
 {
   use();
-  ImGui::SetWindowFontScale(scale);
   ImGui::Text("%s", text.c_str());
 }
 
@@ -132,4 +136,19 @@ void Window::pane_begin(std::string const &name) const
 void Window::pane_end() const
 {
   ImGui::End();
+}
+void Window::font_scale(float scale)
+{
+  ImGui::SetWindowFontScale(scale);
+}
+void Window::key_callback(int key, int /*scancode*/, int action, int /*mods*/)
+{
+  // Default: Press Esc to close the window.
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(_window, GLFW_TRUE);
+  }
+}
+void Window::should_close(bool value)
+{
+  glfwSetWindowShouldClose(_window, static_cast<int>(value));
 }
