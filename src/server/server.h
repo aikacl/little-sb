@@ -32,9 +32,15 @@ public:
 
 private:
   explicit Server(std::uint16_t bind_port);
+
   [[nodiscard]] static constexpr auto tick_interval();
-  void
-  register_command_executor(std::unique_ptr<Server_command_executor> executor);
+
+  // To use a server command executor, you should register it here first.
+  template <typename Derived_server_command_executor>
+    requires(std::derived_from<Derived_server_command_executor,
+                               Server_command_executor>)
+  void register_command_executor();
+
   void remove_player(std::string const &player_name);
   auto allocate_game(std::array<Player *, 2> players) -> Battle &;
   void run_main_game_loop();
@@ -55,3 +61,13 @@ private:
 
   static constexpr std::size_t max_tick_per_second{3};
 };
+
+template <typename Derived_server_command_executor>
+  requires(std::derived_from<Derived_server_command_executor,
+                             Server_command_executor>)
+void Server::register_command_executor()
+{
+  auto executor{std::make_unique<Derived_server_command_executor>(this)};
+  auto name{executor->name()};
+  _server_commands.insert({name, std::move(executor)});
+}

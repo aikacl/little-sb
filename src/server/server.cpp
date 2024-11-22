@@ -40,20 +40,11 @@ Server::Server(std::uint16_t bind_port)
                     item::Item_info{.name{"First aid kit"}, .price = 3}}},
       _session_service(this, bind_port, "Server")
 {
-  register_command_executor(
-      std::make_unique<Say_server_command_executor>(this));
+  register_command_executor<Say_server_command_executor>();
+  register_command_executor<Escape_server_command_executor>();
+  register_command_executor<Fuck_server_command_executor>();
   // register_command_executor(
   //     std::make_unique<Query_event_server_command_executor>(this));
-  register_command_executor(
-      std::make_unique<Fuck_server_command_executor>(this));
-  register_command_executor(
-      std::make_unique<Escape_server_command_executor>(this));
-}
-
-void Server::register_command_executor(
-    std::unique_ptr<Server_command_executor> executor)
-{
-  _server_commands.emplace(executor->name(), std::move(executor));
 }
 
 constexpr auto Server::tick_interval()
