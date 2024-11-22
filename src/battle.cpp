@@ -1,9 +1,8 @@
 #include "battle.h"
 #include "chrono.h"
 
-Battle::Battle(std::uint64_t const id,
-               std::array<player::Player *, 2> const players,
-               Session_service *const session_service)
+Battle::Battle(std::uint64_t id, std::array<Player *, 2> players,
+               Session_service *session_service)
     : _id{id}, _players{players}, _session_service{session_service}
 {
 }
@@ -45,11 +44,6 @@ auto Battle::id() const -> std::uint64_t
   return _id;
 }
 
-auto Battle::pending_events() -> std::queue<std::string> &
-{
-  return _pending_events;
-}
-
 auto Battle::ended() const -> bool
 {
   return _ended;
@@ -63,7 +57,7 @@ void Battle::stop(Stop_cause cause)
     _session_service->push_event(_players[0]->name(), game_end);
 
     Event message{"message"};
-    message.add_arg(cause);
+    message.add_arg("Someone's health has dropped to 0.");
     _session_service->push_event(_players[1]->name(), message);
     break;
   }

@@ -27,6 +27,11 @@ Command::Command(std::string name) : _data(json::object())
 Command::Command(json data) : _data(std::move(data))
 {
   // spdlog::debug("Creating command from json: {}", _data.dump());
+  std::chrono::zoned_time now{std::chrono::current_zone(),
+                              std::chrono::system_clock::now()};
+  _data["created_time"] = std::format(
+      "{:%F %T}",
+      std::chrono::round<std::chrono::seconds>(now.get_local_time()));
 }
 
 auto Command::name() const -> std::string

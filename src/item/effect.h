@@ -8,8 +8,8 @@ namespace item {
 class Effect {
 public:
   virtual ~Effect() = default;
-  virtual void perform(player::Player &p) = 0;
-  virtual void deperform(player::Player &p) = 0;
+  virtual void perform(Player &p) = 0;
+  virtual void deperform(Player &p) = 0;
 };
 
 class EnhancementEffect : public Effect {};
@@ -18,8 +18,8 @@ class MultiplyEnhancementEffect : public EnhancementEffect {
 public:
   ~MultiplyEnhancementEffect() override = default;
 
-  void perform(player::Player &p) override;
-  void deperform(player::Player &p) override;
+  void perform(Player &p) override;
+  void deperform(Player &p) override;
 };
 
 } // namespace item

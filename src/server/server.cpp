@@ -1,7 +1,7 @@
-#include "server/server.h"
+#include "server.h"
 #include "battle.h"
 #include "player.h"
-#include "server/server-command-executor.h"
+#include "server-command-executor.h"
 #include <source_location>
 #include <spdlog/spdlog.h>
 
@@ -40,20 +40,11 @@ Server::Server(std::uint16_t bind_port)
                     item::Item_info{.name{"First aid kit"}, .price = 3}}},
       _session_service(this, bind_port, "Server")
 {
-  register_command_executor(
-      std::make_unique<Say_server_command_executor>(this));
+  register_command_executor<Say_server_command_executor>();
+  register_command_executor<Escape_server_command_executor>();
+  register_command_executor<Fuck_server_command_executor>();
   // register_command_executor(
   //     std::make_unique<Query_event_server_command_executor>(this));
-  register_command_executor(
-      std::make_unique<Fuck_server_command_executor>(this));
-  register_command_executor(
-      std::make_unique<Escape_server_command_executor>(this));
-}
-
-void Server::register_command_executor(
-    std::unique_ptr<Server_command_executor> executor)
-{
-  _server_commands.emplace(executor->name(), std::move(executor));
 }
 
 constexpr auto Server::tick_interval()
@@ -69,7 +60,7 @@ void Server::remove_player(std::string const &player_name)
   _players.extract(player_name);
 }
 
-auto Server::allocate_game(std::array<player::Player *, 2> players) -> Battle &
+auto Server::allocate_game(std::array<Player *, 2> players) -> Battle &
 {
   auto const id{_games.empty() ? std::uint64_t{} : _games.rbegin()->first + 1};
   return _games.try_emplace(id, Battle{id, players, &_session_service})

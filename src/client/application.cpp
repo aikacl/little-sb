@@ -38,7 +38,7 @@ void Application::tick()
 
 void Application::poll_events()
 {
-  // TODO(shelpam): comment needed–why should we restart here?
+  // TODO(shelpam): comments needed—why should we restart here?
   _io_context.poll();
   if (_io_context.stopped()) {
     _io_context.restart();
@@ -48,11 +48,16 @@ void Application::poll_events()
 
 void Application::update()
 {
+  static Duration last_tick{current_time()};
+  auto const now{current_time()};
+  _frame_per_second = 1.0s / (now - last_tick);
+  last_tick = now;
+
   // Async query event would be started before main loop.
 
   if (_you) {
     async_request(Command{"sync"}, [this](Event const &e) {
-      _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
+      _you = std::make_unique<Player>(e.get_arg<Player>(0));
     });
   }
 
@@ -62,17 +67,17 @@ void Application::update()
       _store_items = e.get_arg<std::map<std::string, item::Item_info>>(0);
     });
     async_request(Command{"get-game-map"}, [this](Event const &e) {
-      _game_map = std::make_shared<Game_map>(e.get_arg<Game_map>(0));
+      _game_map = std::make_unique<Game_map>(e.get_arg<Game_map>(0));
     });
     break;
   case State::starting_battle:
     async_request(Command{"list-players"}, [this](Event const &e) {
       if (e.name() != "ok") {
-        spdlog::warn("list-players returns {}, which is impossible.", e.name());
-        return;
+        throw std::runtime_error{
+            "list-players returns {}, which is impossible."};
       }
-      _players = e.get_arg<std::map<std::string, player::Player>>(0);
-      spdlog::debug("Players: {}", json(_players).dump());
+      auto players{e.get_arg<std::vector<Player>>(0)};
+      update_players(players);
     });
   default:
     break;
@@ -83,41 +88,68 @@ void Application::update()
 
 void Application::render()
 {
-  _window.pane_begin("Player info"s);
+  {
+    _window.pane_begin("Player info"s);
+    _window.font_scale(3);
 
-  if (_you) {
-    show_player_info();
-  }
+    static Duration last_sample_fps{current_time()};
+    static long double sampled_fps;
+    if (auto const current_sample_fps{current_time()};
+        current_sample_fps > last_sample_fps + 1s) {
+      sampled_fps = _frame_per_second;
+      last_sample_fps = current_time();
+    }
+    _window.text(std::format("fps: {:.0f}", sampled_fps));
 
-  switch (_state) {
-  case State::unlogged_in:
-    render_unlogged_in();
-    break;
-  case State::logging:
-    _window.text("Logging in...");
-    break;
-  case State::greeting:
-    handle_greeting();
-    break;
-  case State::starting_battle:
-    handle_starting_battle();
-    break;
-  case State::battling:
-    handle_battling();
-    break;
-  case State::ended:
-    handle_ended();
-    break;
-  default: // Unreachable
-    break;
-  }
+    if (_you) {
+      show_player_info();
+    }
 
-  if (_state != State::unlogged_in) {
+    switch (_state) {
+    case State::unlogged_in:
+      render_unlogged_in();
+      break;
+    case State::logging:
+      _window.text("Logging in...");
+      break;
+    case State::greeting:
+      handle_greeting();
+      break;
+    case State::starting_battle:
+      handle_starting_battle();
+      break;
+    case State::battling:
+      handle_battling();
+      break;
+    case State::ended:
+      handle_ended();
+      break;
+    default: // Unreachable
+      break;
+    }
+
     _window.text("");
     render_messages();
+
+    _window.pane_end();
   }
 
-  _window.pane_end();
+  {
+    _window.pane_begin("Battle field");
+    _window.font_scale(3);
+
+    // if (ImGui::IsItemFocused()) {
+    //   if () {
+    //   }
+    // }
+
+    if (_game_map) {
+      for (auto const &line : _game_map->to_char_matrix()) {
+        _window.text(line | std::ranges::to<std::string>());
+      }
+    }
+    _window.pane_end();
+  }
 
   _window.render();
 }
@@ -233,12 +265,12 @@ void Application::starting_new_game()
   }
   _window.text("(Note: only players visible to you are shown.)");
   for (auto const &[_, player] : _players) {
-    if (!_you->can_see(player)) {
+    if (!_you->can_see(*player)) {
       continue;
     }
-    if (_window.button(player.name())) {
+    if (_window.button(player->name())) {
       Command battle{"battle"};
-      battle.add_arg(player.name());
+      battle.add_arg(player->name());
       async_request(battle, [this](Event const &e) {
         if (e.name() == "ok") {
           _battle_id = e.get_param<std::size_t>("game-id");
@@ -377,6 +409,7 @@ void Application::remove_expired_messages()
 }
 void Application::render_unlogged_in()
 {
+  // TODO(shelpam): refactor: extract `input text` into `Window` class.
   ImGui::InputText("Your name here", _name_buf.data(), _name_buf.size());
   _name = std::string(_name_buf.data(), std::strlen(_name_buf.data()));
   ImGui::InputText("Server host", _host_buf.data(), _host_buf.size());
@@ -386,17 +419,7 @@ void Application::render_unlogged_in()
       return;
     }
     try {
-      _session = std::make_shared<Session>(
-          connect(_io_context, std::string_view{_host_buf}, "1438"));
-      async_request(Command{"login"}, [this](Event const &e) {
-        if (e.name() != "ok") {
-          assert(false);
-        }
-        _you = std::make_shared<player::Player>(e.get_arg<player::Player>(0));
-        schedule_continuous_query_event();
-        _state = State::greeting;
-      });
-      _state = State::logging;
+      connect_to_the_server();
     }
     catch (std::system_error const &e) {
       if (e.code() == asio::error::host_not_found) {
@@ -415,6 +438,15 @@ void Application::render_unlogged_in()
         throw;
       }
     }
+    async_request(Command{"login"}, [this](Event const &e) {
+      if (e.name() != "ok") {
+        assert(false);
+      }
+      _you = std::make_unique<Player>(e.get_arg<Player>(0));
+      schedule_continuous_query_event();
+      _state = State::greeting;
+    });
+    _state = State::logging;
   }
 }
 void Application::render_messages()
@@ -437,7 +469,7 @@ void Application::render_messages()
     // In order to make the font size seems to be the same with outter text, and
     // the actual font size is calculated by `outter-size * inner-scale`, we
     // should set the second parameter `scale` to 1 here.
-    _window.text(std::format("{}", msg.content), 1);
+    _window.text(std::format("{}", msg.content));
   }
 
   was_at_bottom = ImGui::GetScrollY() == ImGui::GetScrollMaxY();
@@ -448,5 +480,17 @@ void Application::render_messages()
 
   if (_window.button("Clear messages")) {
     _messages.clear();
+  }
+}
+void Application::connect_to_the_server()
+{
+  _session = std::make_shared<Session>(
+      connect(_io_context, std::string_view{_host_buf}, "1438"));
+}
+void Application::update_players(std::vector<Player> const &players)
+{
+  _players.clear();
+  for (auto &&p : players) {
+    _players.insert({p.name(), std::make_unique<Player>(p)});
   }
 }

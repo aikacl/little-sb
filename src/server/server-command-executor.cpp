@@ -27,10 +27,6 @@ Say_server_command_executor::Say_server_command_executor(Server *server)
     : Server_command_executor{server}
 {
 }
-constexpr auto Say_server_command_executor::name() -> std::string
-{
-  return "say";
-}
 
 // TODO(shelpam): here commented out just for debug. Please recover here.
 //
@@ -56,10 +52,6 @@ constexpr auto Say_server_command_executor::name() -> std::string
 //     : Server_command_executor{server}
 // {
 // }
-// constexpr auto Query_event_server_command_executor::name() -> std::string
-// {
-//   return "query-event";
-// }
 
 Fuck_server_command_executor::Fuck_server_command_executor(Server *server)
     : Server_command_executor{server}
@@ -79,11 +71,6 @@ auto Fuck_server_command_executor::execute(std::string from,
   return Event{"ok"};
 }
 
-constexpr auto Fuck_server_command_executor::name() -> std::string
-{
-  return "fuck";
-}
-
 Escape_server_command_executor::Escape_server_command_executor(Server *server)
     : Server_command_executor{server}
 {
@@ -95,9 +82,4 @@ auto Escape_server_command_executor::execute(std::string /* from */,
   auto const game_id{command.get_param<std::size_t>("game-id")};
   server()->_games.at(game_id).stop(Stop_cause::escaping);
   return Event{"ok"};
-}
-
-constexpr auto Escape_server_command_executor::name() -> std::string
-{
-  return "escape";
 }
