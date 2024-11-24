@@ -52,7 +52,7 @@ public:
   auto attack(Player &target) const -> int;
   auto take_damage(int damage) -> int;
   // delta can not be negative
-  void cure(int delta);
+  void heal(int delta);
 
   [[nodiscard]] auto name() const -> std::string const &;
   [[nodiscard]] auto health() const -> int;

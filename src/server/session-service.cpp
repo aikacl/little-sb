@@ -60,7 +60,7 @@ auto Session_service::on_reading_packet(Packet packet) -> Packet
                   json("Wrong username or password.").dump()};
   }
 
-  // We must consider sign-ups, but for now just ignore it.
+  // TODO(shelpam): We must consider sign-ups, but for now just ignore it.
   Command const player_command{json::parse(std::move(packet.payload))};
   auto const reply{handle_command(packet.sender.username(), player_command)};
   return Packet{Packet::Sender{_name, _name}, reply.dump()};
@@ -70,6 +70,8 @@ auto Session_service::handle_command(std::string const &player_name,
                                      Command const &command) -> Event
 {
   spdlog::trace("Handling player's command");
+
+  spdlog::debug("Received command: {}", command.dump());
 
   // We create new information if the player instance doesn't exist. So here the
   // player should be existing.
@@ -103,9 +105,17 @@ auto Session_service::handle_command(std::string const &player_name,
 
   // TODO(ShelpAm): add authentication.
   if (command.name() == "login") {
-    spdlog::info("{} logged in", player_name);
+    spdlog::info("{} logged in.", player_name);
     Event e{"ok"};
+    player->take_damage(player->health()); // TODO(shelpam): REMOVE ME
     e.add_arg(*player);
+    return e;
+  }
+
+  if (command.name() == "logout") {
+    spdlog::info("{} logged out.", player_name);
+    _server->remove_player(player_name);
+    Event e{"ok"};
     return e;
   }
 
@@ -145,7 +155,7 @@ auto Session_service::handle_command(std::string const &player_name,
     // TODO(shelpam): now only provides one goods, so not using flexible way to
     // achieve the effect.
     if (item.name == "First aid kit") {
-      player->cure(10);
+      player->heal(10);
       Event cure{"cure"};
       cure.add_arg(10);
       cure.set_param("cause",
@@ -192,7 +202,10 @@ auto Session_service::handle_command(std::string const &player_name,
         ->execute(player_name, command);
   }
 
-  Event e{"error"};
-  e.add_arg(std::format("Unrecognized command {}", command.name()));
-  return e;
+  auto const error_msg{
+      std::format("Unrecognized command \"{}\"", command.name())};
+  spdlog::warn(error_msg);
+  Event error{"error"};
+  error.add_arg(error_msg);
+  return error;
 }

@@ -43,6 +43,7 @@ Server::Server(std::uint16_t bind_port)
   register_command_executor<Say_server_command_executor>();
   register_command_executor<Escape_server_command_executor>();
   register_command_executor<Fuck_server_command_executor>();
+  register_command_executor<server_command_executors::Resurrect>();
   // register_command_executor(
   //     std::make_unique<Query_event_server_command_executor>(this));
 }

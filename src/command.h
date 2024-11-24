@@ -14,7 +14,7 @@ public:
   explicit Command(std::string name);
   explicit Command(json data);
 
-  [[nodiscard]] auto name() const -> std::string;
+  [[nodiscard]] auto name() const -> std::string const &;
 
   // Returns the time when the command was created.
   [[nodiscard]] auto created_time() const -> std::string;

@@ -8,6 +8,12 @@ class Server;
 class Server_command_executor {
 public:
   Server_command_executor(Server *server);
+  Server_command_executor(const Server_command_executor &) = delete;
+  Server_command_executor(Server_command_executor &&) = delete;
+  auto operator=(const Server_command_executor &)
+      -> Server_command_executor & = delete;
+  auto operator=(Server_command_executor &&)
+      -> Server_command_executor & = delete;
   virtual ~Server_command_executor() = default;
   virtual auto execute(std::string from, Command const &command) -> Event = 0;
 
@@ -60,3 +66,17 @@ public:
     return "escape"s;
   }
 };
+
+namespace server_command_executors {
+
+class Resurrect : public Server_command_executor {
+public:
+  Resurrect(Server *server);
+  auto execute(std::string from, Command const &command) -> Event final;
+  constexpr auto name() -> std::string final
+  {
+    return "resurrect"s;
+  }
+};
+
+} // namespace server_command_executors

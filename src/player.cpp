@@ -25,7 +25,7 @@ auto Player::take_damage(int damage) -> int
   return damage;
 }
 
-void Player::cure(int delta)
+void Player::heal(int delta)
 {
   assert(delta >= 0);
   _health += delta;

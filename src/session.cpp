@@ -51,8 +51,9 @@ void Session::do_async_read()
           // Do not throw exception because client can construct a malformed
           // package, or just not responding to us. Throwing exception can
           // cause server stop.
-          spdlog::error("Error occurred: {}, closing this session.",
-                        ec.message());
+          spdlog::warn("Error occurred while reading from session: {}, closing "
+                       "this session.",
+                       ec.message());
           return;
         }
 
@@ -82,7 +83,7 @@ void Session::do_async_read()
           }
         }
         catch (std::runtime_error &re) {
-          spdlog::error("Error occurred: {}, closing this session.", re.what());
+          spdlog::warn("Error occurred: {}, closing this session.", re.what());
         }
       });
 }
@@ -105,7 +106,7 @@ void Session::do_async_write()
           return;
         }
         if (ec) {
-          spdlog::error("Error occurred: {}", ec.message());
+          spdlog::warn("Error occurred: {}", ec.message());
           return;
         }
 
@@ -117,7 +118,7 @@ void Session::do_async_write()
           }
         }
         catch (std::runtime_error &re) {
-          spdlog::error("Error occurred: {}, closing this session.", re.what());
+          spdlog::warn("Error occurred: {}, closing this session.", re.what());
         }
       });
 }

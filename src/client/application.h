@@ -23,6 +23,11 @@ class Application {
 
 public:
   Application();
+  Application(const Application &) = delete;
+  Application(Application &&) = delete;
+  auto operator=(const Application &) -> Application & = delete;
+  auto operator=(Application &&) -> Application & = delete;
+  ~Application();
   void run();
 
 private:
@@ -61,7 +66,7 @@ private:
 
   std::chrono::time_point<std::chrono::steady_clock> _start_time;
 
-  long double _frame_per_second;
+  long double _frame_per_second{};
 
   State _state{State::unlogged_in};
   std::string _name;

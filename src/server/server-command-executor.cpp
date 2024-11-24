@@ -83,3 +83,14 @@ auto Escape_server_command_executor::execute(std::string /* from */,
   server()->_games.at(game_id).stop(Stop_cause::escaping);
   return Event{"ok"};
 }
+server_command_executors::Resurrect::Resurrect(Server *server)
+    : Server_command_executor{server}
+{
+}
+auto server_command_executors::Resurrect::execute(std::string from,
+                                                  Command const &command)
+    -> Event
+{
+  server()->_players.at(from)->heal(little_sb::random::uniform(2000, 3000));
+  return Event{"ok"};
+}
