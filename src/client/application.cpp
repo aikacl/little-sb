@@ -20,6 +20,17 @@ void Application::run()
     tick();
   }
 
+  // TODO(shelpam): This blocks, fix it.
+  if (_you) {
+    spdlog::info("Logging out from server...");
+    async_request(Command{"logout"}, [](Event const &e) {
+      if (e.name() != "ok") {
+        throw std::runtime_error{"Logout failed"};
+      }
+    });
+    _io_context.poll();
+  }
+
   spdlog::info("Application stopped");
 }
 
@@ -158,6 +169,17 @@ void Application::show_player_info()
 {
   _window.text(std::format("Your name: {}", _you->name()));
   _window.text(std::format("Your health: {}", _you->health()));
+  if (_you->health() == 0) {
+    ImGui::SameLine();
+    if (_window.button("Resurrect")) {
+      async_request(Command{"resurrect"}, [](Event const &e) {
+        if (e.name() != "ok") {
+          spdlog::error(e.get_arg<std::string>(0));
+          // throw std::runtime_error{e.get_arg<std::string>(0)};
+        }
+      });
+    }
+  }
   _window.text(std::format("Your damage range: {}, {}",
                            _you->damage_range().first,
                            _you->damage_range().second));
@@ -185,12 +207,11 @@ void Application::handle_greeting()
     say.add_arg(std::string{_message_input_buf.data(),
                             std::strlen(_message_input_buf.data())});
     async_request(say, [](Event const &e) {
-      if (e.name() == "ok") {
-        spdlog::info("Message successfully sent.");
-      }
-      else {
+      if (e.name() != "ok") {
         spdlog::warn("Failed to send message.");
+        return;
       }
+      spdlog::info("Message successfully sent.");
     });
   }
   if (_window.button("Start battle")) {
@@ -309,7 +330,7 @@ void Application::process_event(Event const &event)
                             event.get_param<std::string>("from")));
   }
   else if (event.name() == "cure") {
-    _you->cure(event.get_arg<int>(0));
+    _you->heal(event.get_arg<int>(0));
     add_to_show(event.get_param<std::string>("cause"));
   }
   else if (event.name() == "fuck") {
@@ -420,6 +441,15 @@ void Application::render_unlogged_in()
     }
     try {
       connect_to_the_server();
+      async_request(Command{"login"}, [this](Event const &e) {
+        if (e.name() != "ok") {
+          assert(false);
+        }
+        _you = std::make_unique<Player>(e.get_arg<Player>(0));
+        schedule_continuous_query_event();
+        _state = State::greeting;
+      });
+      _state = State::logging;
     }
     catch (std::system_error const &e) {
       if (e.code() == asio::error::host_not_found) {
@@ -438,15 +468,14 @@ void Application::render_unlogged_in()
         throw;
       }
     }
-    async_request(Command{"login"}, [this](Event const &e) {
-      if (e.name() != "ok") {
-        assert(false);
+    catch (std::runtime_error const &e) {
+      if (e.what() == "Connection timed out"sv) {
+        add_to_show("Connection timed out");
       }
-      _you = std::make_unique<Player>(e.get_arg<Player>(0));
-      schedule_continuous_query_event();
-      _state = State::greeting;
-    });
-    _state = State::logging;
+      else {
+        throw;
+      }
+    }
   }
 }
 void Application::render_messages()
@@ -494,3 +523,4 @@ void Application::update_players(std::vector<Player> const &players)
     _players.insert({p.name(), std::make_unique<Player>(p)});
   }
 }
+Application::~Application() = default;

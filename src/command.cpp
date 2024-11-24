@@ -34,9 +34,13 @@ Command::Command(json data) : _data(std::move(data))
       std::chrono::round<std::chrono::seconds>(now.get_local_time()));
 }
 
-auto Command::name() const -> std::string
+auto Command::name() const -> std::string const &
 {
-  return _data["name"].get<std::string>();
+  static std::string empty;
+  if (!_data.contains("name")) {
+    return empty;
+  }
+  return _data["name"].get_ref<std::string const &>();
 }
 
 auto Command::dump() const -> std::string

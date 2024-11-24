@@ -3,15 +3,14 @@
 #include "game-map.h"
 #include "item/item.h"
 #include "packet.h"
+#include "server/server-command-executor.h"
 #include "server/session-service.h"
 #include <asio.hpp>
 #include <map>
 
 class Battle;
 class Command;
-namespace player {
 class Player;
-}
 struct Packet;
 class Server_command_executor;
 
@@ -20,6 +19,7 @@ class Server {
   friend class Query_event_server_command_executor;
   friend class Fuck_server_command_executor;
   friend class Escape_server_command_executor;
+  friend class server_command_executors::Resurrect;
 
 private:
   friend class Session_service;
