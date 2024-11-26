@@ -89,4 +89,14 @@ public:
   }
 };
 
+class Speed_up : public Server_command_executor {
+public:
+  Speed_up(Server *server);
+  auto execute(std::string from, Command const &command) -> Event final;
+  constexpr auto name() -> std::string final
+  {
+    return "speed-up"s;
+  }
+};
+
 } // namespace server_command_executors
