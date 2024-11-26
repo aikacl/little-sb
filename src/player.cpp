@@ -187,7 +187,7 @@ void Player::do_move(Duration delta, Game_map const &map)
       static_cast<float>(
           std::chrono::duration_cast<std::chrono::duration<float>>(delta)
               .count()) *
-      _move_direction.dir;
+      _move_direction.dir * (_speed_up ? 2.0f : 1.0f);
 
   // Please revise the position based on the game map.
   // I directly check x and y compared by 0 here, because I know the game map
@@ -204,4 +204,7 @@ void Player::do_move(Duration delta, Game_map const &map)
   if (_position.y() >= map.width()) {
     _position.dir.y = map.width() - 1;
   }
+}
+void Player::set_speed_up(int on) {
+  _speed_up = static_cast<bool>(on);
 }
