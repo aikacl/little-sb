@@ -7,7 +7,8 @@
 #include <asio.hpp>
 #include <cassert>
 
-Application::Application() : _start_time{std::chrono::steady_clock::now()}
+Application::Application()
+    : _start_time{std::chrono::steady_clock::now()}, _window{this}
 {
   spdlog::trace("Call {}", std::source_location::current().function_name());
 }
@@ -187,8 +188,8 @@ void Application::show_player_info()
       std::format("Your critical hit rate: {:.3}", _you->critical_hit_rate()));
   _window.text(std::format("Your defense: {}", _you->defense()));
   _window.text(std::format("Your money left: {}", _you->money()));
-  _window.text(std::format("Your position: ({}, {})", _you->position().x,
-                           _you->position().y));
+  _window.text(std::format("Your position: ({}, {})", _you->position().x(),
+                           _you->position().y()));
 
   // TODO(shelpam): show game map here
 }
@@ -524,3 +525,7 @@ void Application::update_players(std::vector<Player> const &players)
   }
 }
 Application::~Application() = default;
+auto Application::state() const -> State
+{
+  return _state;
+}

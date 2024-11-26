@@ -94,3 +94,14 @@ auto server_command_executors::Resurrect::execute(std::string from,
   server()->_players.at(from)->heal(little_sb::random::uniform(500, 1000));
   return Event{"ok"};
 }
+server_command_executors::Move::Move(Server *server)
+    : Server_command_executor{server}
+{
+}
+auto server_command_executors::Move::execute(std::string from,
+                                             Command const &command) -> Event
+{
+  auto const dir{command.get_param<Vec2>("direction")};
+  server()->_players.at(from)->move_direction(dir);
+  return Event{"ok"};
+}

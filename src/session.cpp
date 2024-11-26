@@ -83,7 +83,7 @@ void Session::do_async_read()
           }
         }
         catch (std::runtime_error &re) {
-          spdlog::warn("Error occurred: {}, closing this session.", re.what());
+          spdlog::error("Error occurred: {}, closing this session.", re.what());
         }
       });
 }
@@ -118,7 +118,7 @@ void Session::do_async_write()
           }
         }
         catch (std::runtime_error &re) {
-          spdlog::warn("Error occurred: {}, closing this session.", re.what());
+          spdlog::error("Error occurred: {}, closing this session.", re.what());
         }
       });
 }

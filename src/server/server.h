@@ -20,6 +20,7 @@ class Server {
   friend class Fuck_server_command_executor;
   friend class Escape_server_command_executor;
   friend class server_command_executors::Resurrect;
+  friend class server_command_executors::Move;
 
 private:
   friend class Session_service;
@@ -48,7 +49,7 @@ private:
 
   std::atomic<bool> _main_game_loop_should_stop;
 
-  Game_map _game_map;
+  Game_map _game_map; // Should be updated in each update of frames.
 
   std::map<Battle_id, Battle> _battles;
   std::map<std::string, item::Item_info> _store_items;
@@ -59,7 +60,7 @@ private:
   asio::io_context _io_context;
   Session_service _session_service;
 
-  static constexpr std::size_t max_tick_per_second{3};
+  static constexpr std::size_t max_tick_per_second{10};
 };
 
 template <typename Derived_server_command_executor>

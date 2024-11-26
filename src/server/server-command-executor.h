@@ -79,4 +79,14 @@ public:
   }
 };
 
+class Move : public Server_command_executor {
+public:
+  Move(Server *server);
+  auto execute(std::string from, Command const &command) -> Event final;
+  constexpr auto name() -> std::string final
+  {
+    return "move"s;
+  }
+};
+
 } // namespace server_command_executors
