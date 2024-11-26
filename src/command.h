@@ -5,6 +5,9 @@
 using namespace std::literals;
 
 // When you send request from client to the server, you're passing a command.
+// A command may contain arguments and parameters. Usually, these arguments and
+// parameters show up in command line as the form of
+// `a-command --key1=value1 --key2=value2 arg1 arg2`.
 class Command {
   friend void to_json(json &j, const Command &cmd);
   friend void from_json(const json &j, Command &cmd);
