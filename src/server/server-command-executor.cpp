@@ -105,3 +105,14 @@ auto server_command_executors::Move::execute(std::string from,
   server()->_players.at(from)->move_direction(dir);
   return Event{"ok"};
 }
+server_command_executors::Speed_up::Speed_up(Server *server)
+    : Server_command_executor{server}
+{
+}
+auto server_command_executors::Speed_up::execute(std::string from,
+                                                 Command const &command) -> Event
+{
+  auto const on{command.get_arg<int>(0)};
+  server()->_players.at(from)->set_speed_up(on);
+  return Event{"ok"};
+}
