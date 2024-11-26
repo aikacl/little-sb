@@ -152,18 +152,56 @@ auto Player::Builder::visual_range(float visual_range) -> Player::Builder &
   _player->_visual_range = visual_range;
   return *this;
 }
-auto Player::Builder::position(glm::vec2 position) -> Player::Builder &
+auto Player::Builder::position(Vec2 position) -> Player::Builder &
 {
   _player->_position = position;
   return *this;
 }
-auto Player::position() const -> glm::vec2
+auto Player::position() const -> Vec2
 {
   return _position;
 }
 auto Player::can_see(Player const &other) const -> bool
 {
   // TODO(shelpam): Terrain effect
-  return glm::distance(_position, other._position) <= _visual_range;
+  return glm::distance(_position.dir, other._position.dir) <= _visual_range;
 }
 Player::Builder::Builder() : _player{std::make_unique<Player>()} {}
+auto Vec2::x() const -> float
+{
+  return dir.x;
+}
+
+auto Vec2::y() const -> float
+{
+  return dir.y;
+}
+void Player::move_direction(Vec2 dir)
+{
+  _move_direction = dir;
+}
+
+void Player::do_move(Duration delta, Game_map const &map)
+{
+  _position.dir +=
+      static_cast<float>(
+          std::chrono::duration_cast<std::chrono::duration<float>>(delta)
+              .count()) *
+      _move_direction.dir;
+
+  // Please revise the position based on the game map.
+  // I directly check x and y compared by 0 here, because I know the game map
+  // ranges between 0 and height, width.
+  if (_position.x() < 0) {
+    _position.dir.x = 0;
+  }
+  if (_position.x() >= map.height()) {
+    _position.dir.x = map.height() - 1;
+  }
+  if (_position.y() < 0) {
+    _position.dir.y = 0;
+  }
+  if (_position.y() >= map.width()) {
+    _position.dir.y = map.width() - 1;
+  }
+}

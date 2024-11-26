@@ -44,6 +44,7 @@ Server::Server(std::uint16_t bind_port)
   register_command_executor<Escape_server_command_executor>();
   register_command_executor<Fuck_server_command_executor>();
   register_command_executor<server_command_executors::Resurrect>();
+  register_command_executor<server_command_executors::Move>();
   // register_command_executor(
   //     std::make_unique<Query_event_server_command_executor>(this));
 }
@@ -77,14 +78,23 @@ void Server::run_main_game_loop()
   while (!_main_game_loop_should_stop) {
     _io_context.poll();
 
-    if (auto const now{std::chrono::steady_clock::now()};
-        now >= last_update + tick_interval()) {
-      for (auto &[_, game] : _battles) {
-        game.update(now - last_update);
+    auto const now{std::chrono::steady_clock::now()};
+    auto const delta{now - last_update};
+
+    if (now >= last_update + tick_interval()) {
+      for (auto &[_, battle] : _battles) {
+        battle.update(delta);
       }
 
       last_update = std::chrono::steady_clock::now();
     }
+
+    for (auto &[_, player] : _players) {
+      player->do_move(delta, _game_map);
+    }
+    _game_map.update(_players | std::views::values);
+
+    std::this_thread::sleep_until(now + tick_interval());
   }
 
   spdlog::info("Main game loop over");

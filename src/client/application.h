@@ -11,6 +11,7 @@
 #include <set>
 
 class Application {
+public:
   enum class State : std::uint8_t {
     unlogged_in,
     logging,
@@ -21,14 +22,21 @@ class Application {
     should_stop,
   };
 
-public:
   Application();
   Application(const Application &) = delete;
   Application(Application &&) = delete;
   auto operator=(const Application &) -> Application & = delete;
   auto operator=(Application &&) -> Application & = delete;
   ~Application();
+
   void run();
+
+  [[nodiscard]] auto state() const -> State;
+
+  // Sends request (`command`) to the server, the when server replies to us, the
+  // message replied should be processed by `on_replied`.
+  void async_request(Command const &command,
+                     std::function<void(Event)> on_replied);
 
 private:
   // Relative time, since start of the program. Like `glfwGetTime()`.
@@ -54,9 +62,6 @@ private:
 
   void process_event(Event const &event);
   void add_to_show(std::string message);
-
-  void async_request(Command const &command,
-                     std::function<void(Event)> on_replied);
 
   void remove_expired_messages();
   void connect_to_the_server();

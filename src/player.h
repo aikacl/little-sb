@@ -1,5 +1,7 @@
 #pragma once
 
+#include "chrono.h"
+#include "game-map.h"
 #include "item/effect.h"
 #include "json.h"
 #include "uuid.h"
@@ -7,6 +9,16 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+
+struct Vec2 {
+  template <typename... Args> Vec2(Args... args) : dir{args...} {}
+  [[nodiscard]] auto x() const -> float;
+  [[nodiscard]] auto y() const -> float;
+
+  glm::vec2 dir;
+
+  NLOHMANN_DEFINE_TYPE_INTRUSIVE(Vec2, dir.x, dir.y)
+};
 
 class Player;
 using Damage_range = std::pair<int, int>;
@@ -28,7 +40,7 @@ public:
     auto money(int money) -> Builder &;
     auto movement_volecity(float movement_volecity) -> Builder &;
     auto visual_range(float visual_range) -> Builder &;
-    auto position(glm::vec2 position) -> Builder &;
+    auto position(Vec2 position) -> Builder &;
 
     auto build() -> std::unique_ptr<Player>;
 
@@ -68,7 +80,9 @@ public:
   void cost_money(int cost);
   [[nodiscard]] auto money() const -> int;
 
-  [[nodiscard]] auto position() const -> glm::vec2;
+  [[nodiscard]] auto position() const -> Vec2;
+  void do_move(Duration delta, Game_map const &map);
+  void move_direction(Vec2 dir);
 
   [[nodiscard]] auto can_see(Player const &other) const -> bool;
 
@@ -94,10 +108,11 @@ private:
   float _movement_velocity{};
   float _visual_range{};
 
-  glm::vec2 _position{};
+  Vec2 _position{};
+  Vec2 _move_direction{};
 
   NLOHMANN_DEFINE_TYPE_INTRUSIVE(Player, _name, _health, _damage_range,
                                  _critical_hit_rate, _critical_hit_buff,
                                  _defense, _money, _movement_velocity,
-                                 _visual_range, _position.x, _position.y)
+                                 _visual_range, _position, _move_direction)
 };

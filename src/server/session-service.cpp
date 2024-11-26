@@ -93,12 +93,10 @@ auto Session_service::handle_command(std::string const &player_name,
              .critical_hit_buff(1.5)
              .defense(little_sb::random::uniform(20, 30))
              .money(100)
-             .movement_volecity(1)
+             .movement_volecity(2)
              .visual_range(15)
              .position(position)
              .build()});
-
-    _server->_game_map.modify(position.x, position.y, Basic_terrain{'P'});
   }
 
   auto const &player{_server->_players.at(player_name)};
