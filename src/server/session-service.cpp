@@ -105,7 +105,6 @@ auto Session_service::handle_command(std::string const &player_name,
   if (command.name() == "login") {
     spdlog::info("{} logged in.", player_name);
     Event e{"ok"};
-    player->take_damage(player->health()); // TODO(shelpam): REMOVE ME
     e.add_arg(*player);
     return e;
   }
