@@ -19,10 +19,11 @@ void Main_window::key_callback(int key, int /*scancode*/, int action,
       switch (action) {
       case GLFW_PRESS:
       case GLFW_REPEAT: {
-        static std::unordered_map<int, Vec2> dirs{{GLFW_KEY_W, Vec2{-1, 0}},
-                                                  {GLFW_KEY_A, Vec2{0, -1}},
-                                                  {GLFW_KEY_S, Vec2{1, 0}},
-                                                  {GLFW_KEY_D, Vec2{0, 1}}};
+        static std::unordered_map<int, Vec2> const dirs{
+            {GLFW_KEY_W, Vec2{-1, 0}},
+            {GLFW_KEY_A, Vec2{0, -1}},
+            {GLFW_KEY_S, Vec2{1, 0}},
+            {GLFW_KEY_D, Vec2{0, 1}}};
         Command move{"move"};
         move.set_param("direction", dirs.at(key));
         _app->async_request(move, [](Event const &e) {
