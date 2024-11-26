@@ -48,6 +48,20 @@ void Main_window::key_callback(int key, int /*scancode*/, int action,
       }
       break;
     }
+    case GLFW_KEY_LEFT_SHIFT: {
+      Command speed_up{"speed-up"};
+      if (action == GLFW_PRESS) {
+        move.add_arg(1);
+      } else {
+        move.add_arg(0);
+      }
+      _app->async_request(speed_up, [](Event const &e) {
+        if (e.name() != "ok") {
+          throw std::runtime_error{e.get_arg<std::string>(0)};
+        }
+      });
+      break;
+    }
     default:
       break;
     }
