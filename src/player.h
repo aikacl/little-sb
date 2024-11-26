@@ -84,6 +84,8 @@ public:
   void do_move(Duration delta, Game_map const &map);
   void move_direction(Vec2 dir);
 
+  void set_speed_up(int on);
+
   [[nodiscard]] auto can_see(Player const &other) const -> bool;
 
 private:
@@ -106,6 +108,7 @@ private:
   int _money{};
 
   float _movement_velocity{};
+  bool _speed_up{};
   float _visual_range{};
 
   Vec2 _position{};
