@@ -30,6 +30,8 @@ public:
 
 private:
   std::vector<std::vector<Basic_terrain>> _game_map;
+  std::size_t _height;
+  std::size_t _width;
 
   NLOHMANN_DEFINE_TYPE_INTRUSIVE(Game_map, _game_map);
 };
