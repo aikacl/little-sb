@@ -26,8 +26,8 @@ public:
     auto critical_hit_buff(float critical_hit_scale) -> Builder &;
     auto defense(int defense) -> Builder &;
     auto money(int money) -> Builder &;
-    auto movement_volecity(double movement_volecity) -> Builder &;
-    auto visual_range(double visual_range) -> Builder &;
+    auto movement_volecity(float movement_volecity) -> Builder &;
+    auto visual_range(float visual_range) -> Builder &;
     auto position(glm::vec2 position) -> Builder &;
 
     auto build() -> std::unique_ptr<Player>;
@@ -75,7 +75,7 @@ public:
 private:
   Player(std::string name, int health, Damage_range damage_range,
          float critical_hit_rate, float critical_hit_buff, int defense,
-         int money, double movement_volecity, double visual_range,
+         int money, float movement_volecity, float visual_range,
          glm::vec2 position);
 
   [[nodiscard]] auto damage_to(Player const &target) const -> int;
@@ -84,8 +84,6 @@ private:
   int _health{};
 
   std::pair<int, int> _damage_range;
-  std::map<std::shared_ptr<item::Effect>, double> _damage_amplification;
-  std::map<std::shared_ptr<item::Effect>, int> _damage_addition;
 
   float _critical_hit_rate{};
   float _critical_hit_buff{};
@@ -93,8 +91,8 @@ private:
   int _defense{};
   int _money{};
 
-  double _movement_velocity{};
-  double _visual_range{};
+  float _movement_velocity{};
+  float _visual_range{};
 
   glm::vec2 _position{};
 

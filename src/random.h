@@ -4,8 +4,7 @@
 
 namespace little_sb::random {
 
-template <typename T>
-inline auto uniform(T const lower_bound, T const upper_bound) -> T
+template <typename T> inline auto uniform(T lower_bound, T upper_bound) -> T
 {
   static std::random_device rd;
   static std::mt19937_64 gen(rd());
@@ -18,6 +17,11 @@ inline auto uniform(T const lower_bound, T const upper_bound) -> T
     std::uniform_real_distribution<> distrib{lower_bound, upper_bound};
     return distrib(gen);
   }
+}
+
+template <typename T> inline auto uniform(std::pair<T, T> const &bound) -> T
+{
+  return uniform(bound.first, bound.second);
 }
 
 // @param ratio The probability of which the funtion returns a true value.

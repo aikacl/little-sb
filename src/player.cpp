@@ -3,7 +3,7 @@
 
 Player::Player(std::string name, int health, std::pair<int, int> damage_range,
                float critical_hit_rate, float critical_hit_buff, int defense,
-               int money, double movement_volecity, double visual_range,
+               int money, float movement_volecity, float visual_range,
                glm::vec2 position)
     : _name{std::move(name)}, _health{health}, _damage_range{damage_range},
       _critical_hit_rate{critical_hit_rate},
@@ -54,17 +54,7 @@ auto Player::damage_range() const -> std::pair<int, int>
 
 auto Player::generate_damage_from_range() const -> int
 {
-  auto effect_on{[this](int value) {
-    for (auto const &[_, v] : _damage_amplification) {
-      value *= v;
-    }
-    for (auto const &[_, v] : _damage_addition) {
-      value += v;
-    }
-    return value;
-  }};
-  return little_sb::random::uniform(effect_on(_damage_range.first),
-                                    effect_on(_damage_range.second));
+  return little_sb::random::uniform(_damage_range);
 }
 
 auto Player::hit_one() const -> int
@@ -150,14 +140,14 @@ auto Player::Builder::build() -> std::unique_ptr<Player>
   return std::move(_player);
 }
 
-auto Player::Builder::movement_volecity(double movement_volecity)
+auto Player::Builder::movement_volecity(float movement_volecity)
     -> Player::Builder &
 {
   _player->_movement_velocity = movement_volecity;
   return *this;
 }
 
-auto Player::Builder::visual_range(double visual_range) -> Player::Builder &
+auto Player::Builder::visual_range(float visual_range) -> Player::Builder &
 {
   _player->_visual_range = visual_range;
   return *this;
